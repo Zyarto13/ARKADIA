@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10
+
+- Fixed Steam profile detection for current `loginusers.vdf` files that use account timestamps instead of the legacy `MostRecent` marker.
+- Reused the selected Steam profile for owned games, achievement requests, and local playtime cache lookup.
+
 ## 1.0.9
 
 - Restored compact dashboard tile sizing.

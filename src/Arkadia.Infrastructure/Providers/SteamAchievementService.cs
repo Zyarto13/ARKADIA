@@ -1,22 +1,20 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Arkadia.Core.Models;
 using Arkadia.Core.Services;
 
 namespace Arkadia.Infrastructure.Providers;
 
-public sealed partial class SteamAchievementService : IGameAchievementService
+public sealed class SteamAchievementService : IGameAchievementService
 {
-    private const ulong SteamIdBase = 76561197960265728;
     private readonly HttpClient _httpClient;
     private readonly string? _steamRoot;
 
     public SteamAchievementService(HttpClient httpClient, string? steamRoot = null)
     {
         _httpClient = httpClient;
-        _steamRoot = steamRoot ?? FindSteamRoot();
+        _steamRoot = steamRoot ?? SteamProfileLocator.FindSteamRoot();
     }
 
     public async Task<IReadOnlyList<GameAchievement>> GetAchievementsAsync(
@@ -34,7 +32,7 @@ public sealed partial class SteamAchievementService : IGameAchievementService
             throw new ArgumentException("A Steam Web API key is required.", nameof(apiKey));
         }
 
-        var steamId = FindMostRecentSteamId()
+        var steamId = SteamProfileLocator.FindMostRecentSteamId(_steamRoot)
             ?? throw new InvalidOperationException("No recently used Steam profile could be found.");
         var language = Uri.EscapeDataString(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr"
             ? "french"
@@ -132,57 +130,6 @@ public sealed partial class SteamAchievementService : IGameAchievementService
         return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
     }
 
-    private string? FindMostRecentSteamId()
-    {
-        if (_steamRoot is null)
-        {
-            return null;
-        }
-
-        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
-        if (!File.Exists(loginUsersPath))
-        {
-            return null;
-        }
-
-        var contents = File.ReadAllText(loginUsersPath);
-        foreach (Match user in UserBlockRegex().Matches(contents))
-        {
-            if (Regex.IsMatch(user.Groups["fields"].Value, "\"MostRecent\"\\s*\"1\"")
-                && ulong.TryParse(user.Groups["steamId"].Value, out var steamId)
-                && steamId >= SteamIdBase)
-            {
-                return steamId.ToString(CultureInfo.InvariantCulture);
-            }
-        }
-
-        return null;
-    }
-
-    private static string? FindSteamRoot()
-    {
-        var candidates = new[]
-        {
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-        };
-
-        foreach (var candidate in candidates.Where(path => !string.IsNullOrWhiteSpace(path)))
-        {
-            var path = candidate == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-                ? Path.Combine(candidate, "Programs", "Steam")
-                : Path.Combine(candidate, "Steam");
-            if (File.Exists(Path.Combine(path, "steam.exe"))
-                || Directory.Exists(Path.Combine(path, "config")))
-            {
-                return path;
-            }
-        }
-
-        return null;
-    }
-
     private static string? GetString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var property)
         && property.ValueKind == JsonValueKind.String
@@ -200,9 +147,4 @@ public sealed partial class SteamAchievementService : IGameAchievementService
         var sanitized = string.Concat(message.Where(character => !char.IsControl(character))).Trim();
         return sanitized.Length <= 240 ? sanitized : sanitized[..240];
     }
-
-    [GeneratedRegex(
-        "(?s)\"(?<steamId>7656119\\d{10})\"\\s*\\{(?<fields>[^{}]*)\\}",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex UserBlockRegex();
 }

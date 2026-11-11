@@ -33,7 +33,7 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
     {
         _launcher = launcher;
         _httpClient = httpClient;
-        _steamRoot = steamRoot ?? FindSteamRoot();
+        _steamRoot = steamRoot ?? SteamProfileLocator.FindSteamRoot();
         _steamUserDataDirectory = steamUserDataDirectory
             ?? (_steamRoot is null ? null : Path.Combine(_steamRoot, "userdata"));
     }
@@ -123,7 +123,7 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
             throw new ArgumentException("A Steam Web API key is required.", nameof(apiKey));
         }
 
-        var steamId = FindMostRecentSteamId()
+        var steamId = SteamProfileLocator.FindMostRecentSteamId(_steamRoot)
             ?? throw new InvalidOperationException("No recently used Steam profile could be found.");
         var requestUri = new UriBuilder("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/")
         {
@@ -234,57 +234,6 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
             .FirstOrDefault(File.Exists);
     }
 
-    private static string? FindSteamRoot()
-    {
-        var candidates = new[]
-        {
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-        };
-
-        foreach (var candidate in candidates.Where(path => !string.IsNullOrWhiteSpace(path)))
-        {
-            var path = candidate == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-                ? Path.Combine(candidate, "Programs", "Steam")
-                : Path.Combine(candidate, "Steam");
-            if (File.Exists(Path.Combine(path, "steam.exe"))
-                || Directory.Exists(Path.Combine(path, "steamapps")))
-            {
-                return path;
-            }
-        }
-
-        return null;
-    }
-
-    private string? FindMostRecentSteamId()
-    {
-        if (_steamRoot is null)
-        {
-            return null;
-        }
-
-        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
-        if (!File.Exists(loginUsersPath))
-        {
-            return null;
-        }
-
-        var contents = File.ReadAllText(loginUsersPath);
-        foreach (Match user in UserBlockRegex().Matches(contents))
-        {
-            if (Regex.IsMatch(user.Groups["fields"].Value, "\"MostRecent\"\\s*\"1\"")
-                && ulong.TryParse(user.Groups["steamId"].Value, out var steamId)
-                && steamId >= SteamIdBase)
-            {
-                return steamId.ToString(CultureInfo.InvariantCulture);
-            }
-        }
-
-        return null;
-    }
-
     private static string? ReadValue(string contents, string key)
     {
         var match = Regex.Match(
@@ -346,39 +295,16 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
             return null;
         }
 
-        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
-        if (File.Exists(loginUsersPath))
+        var steamIdText = SteamProfileLocator.FindMostRecentSteamId(_steamRoot);
+        if (ulong.TryParse(steamIdText, NumberStyles.None, CultureInfo.InvariantCulture, out var steamId)
+            && steamId >= SteamIdBase)
         {
-            try
+            var accountId = (steamId - SteamIdBase).ToString(
+                CultureInfo.InvariantCulture);
+            var configPath = Path.Combine(_steamUserDataDirectory, accountId, "config", "localconfig.vdf");
+            if (File.Exists(configPath))
             {
-                var loginUsers = File.ReadAllText(loginUsersPath);
-                foreach (Match user in UserBlockRegex().Matches(loginUsers))
-                {
-                    if (!Regex.IsMatch(user.Groups["fields"].Value, "\"MostRecent\"\\s*\"1\""))
-                    {
-                        continue;
-                    }
-
-                    if (ulong.TryParse(user.Groups["steamId"].Value, out var steamId)
-                        && steamId >= SteamIdBase)
-                    {
-                        var accountId = (steamId - SteamIdBase).ToString(
-                            System.Globalization.CultureInfo.InvariantCulture);
-                        var configPath = Path.Combine(_steamUserDataDirectory, accountId, "config", "localconfig.vdf");
-                        if (File.Exists(configPath))
-                        {
-                            return configPath;
-                        }
-                    }
-                }
-            }
-            catch (IOException exception)
-            {
-                Trace.TraceWarning("Could not read the Steam login profile list: {0}", exception.Message);
-            }
-            catch (UnauthorizedAccessException exception)
-            {
-                Trace.TraceWarning("Access to the Steam login profile list was denied: {0}", exception.Message);
+                return configPath;
             }
         }
 
@@ -410,11 +336,6 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
         "(?m)^\\s*(?:\"path\"|\"\\d+\")\\s*\"(?<path>(?:\\\\.|[^\"])*)\"",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex LibraryPathRegex();
-
-    [GeneratedRegex(
-        "(?s)\"(?<steamId>7656119\\d{10})\"\\s*\\{(?<fields>[^{}]*)\\}",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex UserBlockRegex();
 
     [GeneratedRegex(
         "\"(?<appId>\\d+)\"\\s*\\{[^{}]*?\"Playtime\"\\s*\"(?<minutes>\\d+)\"",

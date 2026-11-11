@@ -120,6 +120,50 @@ public sealed class SteamAchievementServiceTests
     }
 
     [Fact]
+    public async Task UsesNewestLoginTimestampWhenMostRecentFlagIsMissing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"arkadia-steam-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "config"));
+        await File.WriteAllTextAsync(
+            Path.Combine(root, "config", "loginusers.vdf"),
+            """
+            "users"
+            {
+                "76561197960265729"
+                {
+                    "AutoLogin" "0"
+                    "timestamp" "1700000000"
+                }
+                "76561197960265730"
+                {
+                    "AutoLogin" "1"
+                    "timestamp" "1800000000"
+                }
+            }
+            """);
+
+        var handler = new FakeHttpMessageHandler(
+            """{"game":{"availableGameStats":{"achievements":[]}}}""",
+            """{"playerstats":{"success":true,"achievements":[]}}""");
+        using var httpClient = new HttpClient(handler);
+        var service = new SteamAchievementService(httpClient, root);
+
+        try
+        {
+            await service.GetAchievementsAsync(
+                new GameEntry("steam", "480", "Test game", null, true, true),
+                "api-key",
+                CancellationToken.None);
+
+            Assert.Contains("steamid=76561197960265730", handler.RequestUris[1].Query);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ReportsMissingSteamAchievementSchemaAsUnavailableInsteadOfNoAchievements()
     {
         var root = Path.Combine(Path.GetTempPath(), $"arkadia-steam-tests-{Guid.NewGuid():N}");

@@ -185,6 +185,45 @@ public sealed class GameProviderTests
     }
 
     [Fact]
+    public async Task SteamProviderUsesNewestLoginTimestampWhenMostRecentFlagIsMissing()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "config"));
+            await File.WriteAllTextAsync(
+                Path.Combine(root, "config", "loginusers.vdf"),
+                """
+                "users"
+                {
+                    "76561197960265729"
+                    {
+                        "AutoLogin" "0"
+                        "timestamp" "1700000000"
+                    }
+                    "76561197960265730"
+                    {
+                        "AutoLogin" "1"
+                        "timestamp" "1800000000"
+                    }
+                }
+                """);
+
+            var handler = new FakeHttpMessageHandler("""{"response":{"games":[]}}""");
+            using var httpClient = new HttpClient(handler);
+            var provider = new SteamGameProvider(new FakeLauncher(), httpClient, root);
+
+            await provider.ScanOwnedAsync("test-api-key", CancellationToken.None);
+
+            Assert.Contains("steamid=76561197960265730", handler.LastRequestUri!.Query);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SteamProviderReportsPrivateOwnedGameListsInsteadOfReturningAnEmptyLibrary()
     {
         var root = CreateTemporaryDirectory();
