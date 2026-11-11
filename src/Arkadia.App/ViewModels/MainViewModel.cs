@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.ComponentModel;
 using System.Windows.Media;
 using Arkadia.App.Icons;
 using Arkadia.App.Localization;
@@ -31,9 +32,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IReadOnlyList<IGameProvider> _gameProviders;
     private readonly Core.Services.IGameAchievementService _gameAchievementService;
     private readonly SteamApiKeyStore _steamApiKeyStore;
+    private readonly GitHubUpdateService _updateService;
     private readonly ThemeService _themeService;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly System.Threading.Timer _clockTimer;
+    private readonly string _currentAppVersion;
     private string _currentPageKey = "Home";
     private string _launchMessage = string.Empty;
     private string _comingSoonText = string.Empty;
@@ -56,6 +59,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isLoadingAchievements;
     private string _shortcutNameInput = string.Empty;
     private string _shortcutUriInput = string.Empty;
+    private string _updateStatusText = string.Empty;
+    private UpdateRelease? _availableUpdate;
+    private bool _isCheckingForUpdates;
+    private bool _isApplyingUpdate;
 
     public MainViewModel(
         IExternalLauncher externalLauncher,
@@ -64,15 +71,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Core.Services.IGameAchievementService gameAchievementService,
         SteamApiKeyStore steamApiKeyStore,
         IEnumerable<IGameProvider> gameProviders,
-        ThemeService themeService)
+        ThemeService themeService,
+        GitHubUpdateService updateService)
     {
         _externalLauncher = externalLauncher;
         _settingsService = settingsService;
         _startupTaskService = startupTaskService;
         _gameAchievementService = gameAchievementService;
         _steamApiKeyStore = steamApiKeyStore;
+        _updateService = updateService;
         _gameProviders = gameProviders.ToArray();
         _themeService = themeService;
+        _currentAppVersion = GitHubUpdateService.CurrentVersion.ToString(3);
         _synchronizationContext = SynchronizationContext.Current;
         NavigationItems =
         [
@@ -165,6 +175,42 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         get => _achievementsStatusText;
         private set => SetProperty(ref _achievementsStatusText, value);
+    }
+
+    public string CurrentAppVersion => _currentAppVersion;
+
+    public string UpdateStatusText
+    {
+        get => _updateStatusText;
+        private set => SetProperty(ref _updateStatusText, value);
+    }
+
+    public bool HasUpdateAvailable => _availableUpdate is not null;
+
+    public bool IsCheckingForUpdates
+    {
+        get => _isCheckingForUpdates;
+        private set
+        {
+            if (SetProperty(ref _isCheckingForUpdates, value))
+            {
+                CheckForUpdatesCommand.NotifyCanExecuteChanged();
+                ApplyUpdateCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsApplyingUpdate
+    {
+        get => _isApplyingUpdate;
+        private set
+        {
+            if (SetProperty(ref _isApplyingUpdate, value))
+            {
+                CheckForUpdatesCommand.NotifyCanExecuteChanged();
+                ApplyUpdateCommand.NotifyCanExecuteChanged();
+            }
+        }
     }
 
     public string SteamApiKey
@@ -353,6 +399,104 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         await _startupTaskService.SetEnabledAsync(RunAtStartup, StartMinimized, cancellationToken);
         await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
+    private async Task CheckForUpdatesAsync(CancellationToken cancellationToken)
+    {
+        _availableUpdate = null;
+        OnPropertyChanged(nameof(HasUpdateAvailable));
+        ApplyUpdateCommand.NotifyCanExecuteChanged();
+        IsCheckingForUpdates = true;
+        UpdateStatusText = LocalizationManager.Instance["Settings.Updates.Checking"];
+
+        try
+        {
+            var result = await _updateService.CheckForUpdatesAsync(cancellationToken);
+            switch (result.Status)
+            {
+                case UpdateCheckStatus.NoRelease:
+                    UpdateStatusText = LocalizationManager.Instance["Settings.Updates.NoRelease"];
+                    break;
+                case UpdateCheckStatus.UpToDate:
+                    UpdateStatusText = string.Format(
+                        CultureInfo.CurrentCulture,
+                        LocalizationManager.Instance["Settings.Updates.UpToDate"],
+                        CurrentAppVersion);
+                    break;
+                case UpdateCheckStatus.UpdateAvailable when result.Release is not null:
+                    _availableUpdate = result.Release;
+                    OnPropertyChanged(nameof(HasUpdateAvailable));
+                    ApplyUpdateCommand.NotifyCanExecuteChanged();
+                    UpdateStatusText = GitHubUpdateService.IsInstalled
+                        ? string.Format(
+                            CultureInfo.CurrentCulture,
+                            LocalizationManager.Instance["Settings.Updates.Available"],
+                            result.Release.Version)
+                        : string.Format(
+                            CultureInfo.CurrentCulture,
+                            LocalizationManager.Instance["Settings.Updates.InstallRequired"],
+                            result.Release.Version);
+                    break;
+                default:
+                    throw new InvalidDataException("The update check returned an unexpected result.");
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or IOException or JsonException or InvalidOperationException)
+        {
+            Log.Warning(exception, "Could not check for ARKADIA updates.");
+            UpdateStatusText = LocalizationManager.Instance["Settings.Updates.CheckFailed"];
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyUpdate))]
+    private async Task ApplyUpdateAsync(CancellationToken cancellationToken)
+    {
+        if (_availableUpdate is null)
+        {
+            return;
+        }
+
+        IsApplyingUpdate = true;
+        UpdateStatusText = LocalizationManager.Instance["Settings.Updates.Installing"];
+        try
+        {
+            await _updateService.DownloadAndLaunchInstallerAsync(_availableUpdate, cancellationToken);
+            if (System.Windows.Application.Current is { } application)
+            {
+                if (application.MainWindow is Arkadia.App.MainWindow mainWindow)
+                {
+                    mainWindow.IsQuitting = true;
+                }
+
+                application.Shutdown();
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            IsApplyingUpdate = false;
+            throw;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+                or IOException
+                or InvalidOperationException
+                or System.Security.Cryptography.CryptographicException
+                or Win32Exception)
+        {
+            Log.Warning(exception, "Could not install the available ARKADIA update.");
+            UpdateStatusText = LocalizationManager.Instance["Settings.Updates.InstallFailed"];
+            IsApplyingUpdate = false;
+        }
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -790,6 +934,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     private bool CanRefreshGames() => !IsLoadingGames;
+    private bool CanCheckForUpdates() => !IsCheckingForUpdates && !IsApplyingUpdate;
+
+    private bool CanApplyUpdate() =>
+        _availableUpdate is not null
+        && GitHubUpdateService.IsInstalled
+        && !IsCheckingForUpdates
+        && !IsApplyingUpdate;
 
     private void NotifyShortcutCollectionChanged()
     {

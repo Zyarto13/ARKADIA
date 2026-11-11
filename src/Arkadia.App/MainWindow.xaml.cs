@@ -78,7 +78,8 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!IsQuitting && DataContext is MainViewModel { CloseToTray: true })
+        if (!IsQuitting
+            && DataContext is MainViewModel { IsApplyingUpdate: false, CloseToTray: true })
         {
             e.Cancel = true;
             _trayIconService?.HideToTray();

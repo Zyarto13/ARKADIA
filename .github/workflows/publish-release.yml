@@ -1,0 +1,56 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Verify tag matches application version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content .\src\Arkadia.App\Arkadia.App.csproj -Raw
+          $version = $project.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          $tagVersion = $env:GITHUB_REF_NAME -replace '^v', ''
+          if ($tagVersion -ne $version) {
+            throw "Release tag $env:GITHUB_REF_NAME does not match application version $version."
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: .\scripts\build-installer.ps1
+
+      - name: Create SHA-256 checksum
+        shell: pwsh
+        run: |
+          $installer = ".\dist\ARKADIA-Setup-$($env:GITHUB_REF_NAME -replace '^v', '')-x64.exe"
+          $checksum = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$checksum  $(Split-Path -Leaf $installer)" | Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = ".\dist\ARKADIA-Setup-$($env:GITHUB_REF_NAME -replace '^v', '')-x64.exe"
+          gh release create $env:GITHUB_REF_NAME $installer "$installer.sha256" `
+            --title "ARKADIA $env:GITHUB_REF_NAME" `
+            --generate-notes `
+            --latest

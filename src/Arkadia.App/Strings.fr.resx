@@ -87,6 +87,18 @@
   <data name="Settings.System" xml:space="preserve"><value>Comportement du système</value></data>
   <data name="Settings.SteamApiKey" xml:space="preserve"><value>Clé Steam Web API</value></data>
   <data name="Settings.SteamApiKeyHelp" xml:space="preserve"><value>Créez une clé personnelle sur steamcommunity.com/dev/apikey. La clé est chiffrée pour votre compte Windows. Pour voir votre progression, réglez aussi « Détails du jeu » sur public dans Steam.</value></data>
+  <data name="Settings.Updates.Title" xml:space="preserve"><value>Mises à jour de l’application</value></data>
+  <data name="Settings.Updates.CurrentVersion" xml:space="preserve"><value>Version installée</value></data>
+  <data name="Settings.Updates.Check" xml:space="preserve"><value>Rechercher des mises à jour</value></data>
+  <data name="Settings.Updates.Install" xml:space="preserve"><value>Télécharger et installer</value></data>
+  <data name="Settings.Updates.Checking" xml:space="preserve"><value>Recherche d’une nouvelle version sur GitHub…</value></data>
+  <data name="Settings.Updates.NoRelease" xml:space="preserve"><value>Aucune version d’ARKADIA n’a encore été publiée.</value></data>
+  <data name="Settings.Updates.UpToDate" xml:space="preserve"><value>Vous avez la dernière version ({0}).</value></data>
+  <data name="Settings.Updates.Available" xml:space="preserve"><value>La version {0} est disponible.</value></data>
+  <data name="Settings.Updates.InstallRequired" xml:space="preserve"><value>La version {0} est disponible. Installez d’abord ARKADIA avec son programme d’installation pour activer les mises à jour intégrées.</value></data>
+  <data name="Settings.Updates.CheckFailed" xml:space="preserve"><value>Impossible de rechercher les mises à jour. Vérifiez votre connexion Internet et réessayez.</value></data>
+  <data name="Settings.Updates.Installing" xml:space="preserve"><value>Téléchargement et vérification de la mise à jour. ARKADIA va redémarrer pour l’installer.</value></data>
+  <data name="Settings.Updates.InstallFailed" xml:space="preserve"><value>Impossible de démarrer la mise à jour. Consultez le journal de l’application pour plus de détails.</value></data>
   <data name="Settings.SaveSteamApiKey" xml:space="preserve"><value>Enregistrer la clé</value></data>
   <data name="Settings.RunAtStartup" xml:space="preserve"><value>Lancer ARKADIA à l’ouverture de session</value></data>
   <data name="Settings.StartMinimized" xml:space="preserve"><value>Démarrer réduit dans la zone de notification</value></data>

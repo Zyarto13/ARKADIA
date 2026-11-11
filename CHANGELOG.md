@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Added GitHub release checks and checksum-verified in-app updates for installed copies.
+- Added a GitHub Actions workflow to build and publish installer releases from version tags.
+
 ## 1.0.2
 
 - Restyled application scrollbars with a slim, rounded, theme-aware design.

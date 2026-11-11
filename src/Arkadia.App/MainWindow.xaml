@@ -364,6 +364,40 @@
                                                        Margin="0,10,0,0" />
                                         </StackPanel>
                                     </Border>
+                                    <Border Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="20"
+                                            Margin="0,12,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding [Settings.Updates.Title], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,8" />
+                                            <DockPanel Margin="0,0,0,12">
+                                                <TextBlock Text="{Binding [Settings.Updates.CurrentVersion], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                <TextBlock Text="{Binding CurrentAppVersion, StringFormat=v{0}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           DockPanel.Dock="Right" />
+                                            </DockPanel>
+                                            <Button Content="{Binding [Settings.Updates.Check], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    Command="{Binding CheckForUpdatesCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    HorizontalAlignment="Left" />
+                                            <Button Content="{Binding [Settings.Updates.Install], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    Command="{Binding ApplyUpdateCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="0,8,0,0"
+                                                    Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <TextBlock Text="{Binding UpdateStatusText}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,10,0,0" />
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </Grid>
                         </Border>
