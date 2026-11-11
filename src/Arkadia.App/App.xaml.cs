@@ -70,7 +70,10 @@ public partial class App : System.Windows.Application, IDisposable
                 services.AddSingleton<Core.Services.ISettingsService>(_ => new JsonSettingsService());
                 services.AddSingleton<Core.Services.IAppDatabase, ArkadiaDatabase>();
                 services.AddSingleton<Core.Services.IStartupTaskService, StartupTaskService>();
-                services.AddSingleton<Core.Providers.IGameProvider, SteamGameProvider>();
+                services.AddSingleton<Core.Providers.IGameProvider>(serviceProvider =>
+                    new SteamGameProvider(
+                        serviceProvider.GetRequiredService<Core.Services.IExternalLauncher>(),
+                        serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<Core.Providers.IGameProvider, EpicGamesProvider>();
                 services.AddSingleton<Core.Services.IGameAchievementService>(serviceProvider =>
                     new SteamAchievementService(serviceProvider.GetRequiredService<HttpClient>()));

@@ -51,6 +51,8 @@
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Could not open this application. Check that it is installed.</value></data>
   <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Play or pause Deezer</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Play next track</value></data>
+  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Deezer volume</value></data>
+  <data name="Home.MediaControl.Favorites" xml:space="preserve"><value>Play a favorite</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Media command sent to the active player.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Could not send the media command.</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Last played</value></data>
@@ -122,7 +124,14 @@
   <data name="Games.Play" xml:space="preserve"><value>PLAY</value></data>
   <data name="Games.PlaytimeUnavailable" xml:space="preserve"><value>Unavailable</value></data>
   <data name="Games.Empty" xml:space="preserve"><value>No installed games were found. Install games through Steam or Epic Games, then scan again.</value></data>
-  <data name="Games.ScanComplete" xml:space="preserve"><value>{0} installed games found.</value></data>
-  <data name="Games.ScanPartial" xml:space="preserve"><value>{0} games found; {1} provider scans failed. See the application log.</value></data>
+  <data name="Games.ScanComplete" xml:space="preserve"><value>{0} installed games · {1} owned on Steam.</value></data>
+  <data name="Games.ScanPartial" xml:space="preserve"><value>{0} games installed · {1} owned on Steam; {2} source scans failed. See the application log.</value></data>
+  <data name="Games.Collection.All" xml:space="preserve"><value>All</value></data>
+  <data name="Games.Collection.Installed" xml:space="preserve"><value>Installed</value></data>
+  <data name="Games.Collection.Owned" xml:space="preserve"><value>Library</value></data>
+  <data name="Games.Install" xml:space="preserve"><value>Install</value></data>
+  <data name="Games.InstallBadge" xml:space="preserve"><value>Not installed</value></data>
+  <data name="Games.OwnedKeyRequired" xml:space="preserve"><value>Add your Steam Web API key in Settings to show owned Steam games. Your Steam profile must be public.</value></data>
+  <data name="Games.OwnedScanFailed" xml:space="preserve"><value>Steam library unavailable. Check your API key, public profile, and connection.</value></data>
   <data name="Games.ProviderUnavailable" xml:space="preserve"><value>The launcher for this game is unavailable.</value></data>
 </root>

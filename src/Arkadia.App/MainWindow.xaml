@@ -4,6 +4,7 @@
         xmlns:icons="clr-namespace:Arkadia.App.Icons"
         xmlns:loc="clr-namespace:Arkadia.App.Localization"
         Title="ARKADIA"
+        Icon="pack://application:,,,/Assets/arkadia.ico"
         Width="1280"
         Height="800"
         MinWidth="960"
@@ -240,6 +241,25 @@
                                                            FontSize="15" />
                                             </Grid>
                                         </Button>
+                                        <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Padding="8,5"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom"
+                                                Margin="0,0,18,16">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Id}" Value="deezer">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="{Binding [Home.MediaControl.Favorites], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="10" />
+                                        </Button>
                                         <StackPanel HorizontalAlignment="Left"
                                                     VerticalAlignment="Bottom"
                                                     Orientation="Horizontal"
@@ -278,6 +298,23 @@
                                                       Height="15"
                                                       Stretch="Uniform" />
                                             </Button>
+                                            <Path Data="M 2,7 H 5 L 9,4 V 14 L 5,11 H 2 Z M 12,7 A 3,3 0 0 1 12,11 M 14,5 A 6,6 0 0 1 14,13"
+                                                  Stroke="{DynamicResource TextPrimaryBrush}"
+                                                  StrokeThickness="1.4"
+                                                  Width="15"
+                                                  Height="15"
+                                                  Margin="9,0,4,0"
+                                                  VerticalAlignment="Center" />
+                                            <Slider Minimum="0"
+                                                    Maximum="1"
+                                                    SmallChange="0.05"
+                                                    LargeChange="0.1"
+                                                    Value="{Binding DataContext.MusicVolume, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    IsEnabled="{Binding DataContext.CanAdjustMusicVolume, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    Width="72"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -798,18 +835,56 @@
                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center"
                                                    DockPanel.Dock="Left" />
-                                        <Button Content="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}"
+                                        <Button Style="{StaticResource SurfaceButtonStyle}"
                                                 Command="{Binding SortGamesByPlaytimeCommand}"
-                                                Padding="14,8"
+                                                Padding="12,8"
                                                 Margin="0,0,8,0"
-                                                HorizontalAlignment="Right"
-                                                DockPanel.Dock="Right" />
-                                        <Button Content="{Binding [Games.Refresh], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                ToolTip="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                DockPanel.Dock="Right">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="M 3,4 H 15 M 3,8 H 12 M 3,12 H 9 M 19,4 V 14 M 16,11 L 19,14 L 22,11"
+                                                      Stroke="{DynamicResource TextPrimaryBrush}"
+                                                      StrokeThickness="1.5"
+                                                      Width="16"
+                                                      Height="16"
+                                                      Margin="0,0,8,0" />
+                                                <TextBlock Text="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Style="{StaticResource SurfaceButtonStyle}"
                                                 Command="{Binding RefreshGamesCommand}"
-                                                Padding="14,8"
-                                                HorizontalAlignment="Right"
-                                                DockPanel.Dock="Right" />
+                                                Padding="12,8"
+                                                DockPanel.Dock="Right">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="M 20,7 A 8,8 0 0 0 6,5 L 4,7 M 4,3 V 7 H 8 M 4,17 A 8,8 0 0 0 18,19 L 20,17 M 20,21 V 17 H 16"
+                                                      Stroke="{DynamicResource TextPrimaryBrush}"
+                                                      StrokeThickness="1.5"
+                                                      Width="16"
+                                                      Height="16"
+                                                      Margin="0,0,8,0" />
+                                                <TextBlock Text="{Binding [Games.Refresh], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            </StackPanel>
+                                        </Button>
                                     </DockPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <Button Content="{Binding [Games.Collection.All], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Style="{StaticResource GameCollectionButtonStyle}"
+                                                Tag="{Binding IsAllGamesSelected}"
+                                                Command="{Binding SelectGameCollectionCommand}"
+                                                CommandParameter="all"
+                                                Margin="0,0,8,0" />
+                                        <Button Content="{Binding [Games.Collection.Installed], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Style="{StaticResource GameCollectionButtonStyle}"
+                                                Tag="{Binding IsInstalledGamesSelected}"
+                                                Command="{Binding SelectGameCollectionCommand}"
+                                                CommandParameter="installed"
+                                                Margin="0,0,8,0" />
+                                        <Button Content="{Binding [Games.Collection.Owned], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Style="{StaticResource GameCollectionButtonStyle}"
+                                                Tag="{Binding IsOwnedGamesSelected}"
+                                                Command="{Binding SelectGameCollectionCommand}"
+                                                CommandParameter="owned" />
+                                    </StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -851,6 +926,12 @@
                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                FontSize="11"
                                                Margin="2,8,0,0" />
+                                    <TextBlock Text="{Binding SteamOwnedGamesStatusText}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               Margin="2,6,0,0"
+                                               Visibility="{Binding IsSteamOwnedGamesUnavailable, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                 </StackPanel>
                                 <Grid Grid.Row="1">
                                     <ItemsControl ItemsSource="{Binding FilteredGames}"
@@ -944,6 +1025,19 @@
                                                                            FontSize="10"
                                                                            FontWeight="Medium" />
                                                             </Border>
+                                                            <Border HorizontalAlignment="Right"
+                                                                    VerticalAlignment="Top"
+                                                                    Background="#C028344B"
+                                                                    BorderBrush="#44FFFFFF"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="10"
+                                                                    Padding="8,4"
+                                                                    Visibility="{Binding IsInstalled, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                                                <TextBlock Text="{Binding [Games.InstallBadge], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                           Foreground="#EFFFFFFF"
+                                                                           FontSize="10"
+                                                                           FontWeight="Medium" />
+                                                            </Border>
                                                             <StackPanel VerticalAlignment="Bottom">
                                                                 <TextBlock Text="{Binding Title}"
                                                                            Foreground="White"
@@ -954,12 +1048,22 @@
                                                                            MaxHeight="42" />
                                                                 <DockPanel Margin="0,7,0,0"
                                                                            LastChildFill="False">
-                                                                    <TextBlock Text="{Binding [Games.Play], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                                               Foreground="#DFFFFFFF"
+                                                                    <TextBlock Foreground="#DFFFFFFF"
                                                                                FontSize="11"
                                                                                FontWeight="Medium"
                                                                                VerticalAlignment="Center"
-                                                                               DockPanel.Dock="Left" />
+                                                                               DockPanel.Dock="Left">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Text" Value="{Binding [Games.Play], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                                                                        <Setter Property="Text" Value="{Binding [Games.Install], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
                                                                     <Border DockPanel.Dock="Right"
                                                                             Background="#64101824"
                                                                             CornerRadius="9"

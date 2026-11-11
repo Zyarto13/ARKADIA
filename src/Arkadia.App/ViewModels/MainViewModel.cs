@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows.Media;
 using Arkadia.App.Icons;
 using Arkadia.App.Localization;
@@ -36,9 +37,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly System.Threading.Timer _clockTimer;
+    private readonly System.Threading.Timer _musicVolumeTimer;
     private readonly string _currentAppVersion;
     private string _gameSearchQuery = string.Empty;
     private string _selectedGameProvider = GameLibraryFilter.AllProviders;
+    private string _selectedGameCollection = GameLibraryFilter.InstalledGames;
     private string _filteredGamesStatusText = string.Empty;
     private string _currentPageKey = "Home";
     private string _launchMessage = string.Empty;
@@ -56,6 +59,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _hasScannedGames;
     private int _failedGameProviders;
     private bool _sortGamesByPlaytime;
+    private bool _steamOwnedLibraryLoadFailed;
+    private bool _isUpdatingMusicVolume;
+    private double _musicVolume;
+    private bool _canAdjustMusicVolume;
     private string _steamApiKey = string.Empty;
     private string _achievementsStatusText = string.Empty;
     private GameEntry? _selectedAchievementGame;
@@ -122,6 +129,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             null,
             TimeSpan.FromSeconds(1),
             TimeSpan.FromMinutes(1));
+        _musicVolumeTimer = new System.Threading.Timer(
+            _ => _synchronizationContext?.Post(
+                static state => ((MainViewModel)state!).RefreshMusicVolume(),
+                this),
+            null,
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(5));
     }
 
     public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
@@ -138,7 +152,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsComingSoon => !IsHome && !IsGames && !IsAchievements && !IsShortcuts && !IsSettings;
     public bool HasGames => Games.Count > 0;
     public bool HasFilteredGames => FilteredGames.Count > 0;
-    public bool IsGameSearchEmpty => HasGames && !HasFilteredGames;
+    public bool IsGameSearchEmpty => HasGames && !HasFilteredGames && !IsSteamOwnedGamesUnavailable;
+    public bool IsSteamOwnedGamesUnavailable =>
+        SelectedGameCollection == GameLibraryFilter.OwnedGames
+        && (string.IsNullOrWhiteSpace(SteamApiKey) || _steamOwnedLibraryLoadFailed);
+    public string SteamOwnedGamesStatusText => string.IsNullOrWhiteSpace(SteamApiKey)
+        ? LocalizationManager.Instance["Games.OwnedKeyRequired"]
+        : LocalizationManager.Instance["Games.OwnedScanFailed"];
     public bool HasShortcuts => Shortcuts.Count > 0;
     public bool IsShortcutsEmpty => Shortcuts.Count == 0;
     public IEnumerable<GameEntry> SteamGames => Games.Where(game => game.ProviderId == "steam");
@@ -202,6 +222,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    [RelayCommand]
+    private void SelectGameCollection(string? collection)
+    {
+        if (collection is GameLibraryFilter.AllGames
+            or GameLibraryFilter.InstalledGames
+            or GameLibraryFilter.OwnedGames)
+        {
+            SelectedGameCollection = collection;
+        }
+    }
+
+    public string SelectedGameCollection
+    {
+        get => _selectedGameCollection;
+        set
+        {
+            if (SetProperty(ref _selectedGameCollection, value))
+            {
+                OnPropertyChanged(nameof(IsAllGamesSelected));
+                OnPropertyChanged(nameof(IsInstalledGamesSelected));
+                OnPropertyChanged(nameof(IsOwnedGamesSelected));
+                RefreshFilteredGames();
+                OnPropertyChanged(nameof(IsSteamOwnedGamesUnavailable));
+            }
+        }
+    }
+
+    public bool IsAllGamesSelected => SelectedGameCollection == GameLibraryFilter.AllGames;
+    public bool IsInstalledGamesSelected => SelectedGameCollection == GameLibraryFilter.InstalledGames;
+    public bool IsOwnedGamesSelected => SelectedGameCollection == GameLibraryFilter.OwnedGames;
+
     public string FilteredGamesStatusText
     {
         get => _filteredGamesStatusText;
@@ -253,7 +304,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string SteamApiKey
     {
         get => _steamApiKey;
-        set => SetProperty(ref _steamApiKey, value);
+        set
+        {
+            if (SetProperty(ref _steamApiKey, value))
+            {
+                OnPropertyChanged(nameof(IsSteamOwnedGamesUnavailable));
+                OnPropertyChanged(nameof(SteamOwnedGamesStatusText));
+                RefreshFilteredGames();
+            }
+        }
     }
 
     public GameEntry? SelectedAchievementGame
@@ -306,6 +365,41 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
     public string ClockText { get; private set; } = string.Empty;
+    public double MusicVolume
+    {
+        get => _musicVolume;
+        set
+        {
+            if (!SetProperty(ref _musicVolume, Math.Clamp(value, 0d, 1d)) || _isUpdatingMusicVolume)
+            {
+                return;
+            }
+
+            try
+            {
+                CanAdjustMusicVolume = WindowsAudioSessionService.TrySetVolume(
+                    SelectedMusicService,
+                    (float)_musicVolume);
+            }
+            catch (COMException exception)
+            {
+                CanAdjustMusicVolume = false;
+                Log.Warning(exception, "Could not set the volume for {MusicService}.", SelectedMusicService);
+            }
+            catch (Win32Exception exception)
+            {
+                CanAdjustMusicVolume = false;
+                Log.Warning(exception, "Could not access the audio session for {MusicService}.", SelectedMusicService);
+            }
+        }
+    }
+
+    public bool CanAdjustMusicVolume
+    {
+        get => _canAdjustMusicVolume;
+        private set => SetProperty(ref _canAdjustMusicVolume, value);
+    }
+
     public string SelectedTheme
     {
         get => _selectedTheme;
@@ -345,6 +439,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     service.TitleKey,
                     service.DescriptionKey,
                     service.LaunchUri);
+                RefreshMusicVolume();
             }
         }
     }
@@ -352,7 +447,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<MusicServiceOption> MusicServices { get; } =
     [
         new("Spotify", "Tile.Music.Spotify", "Tile.Music.Description", "spotify:"),
-        new("Deezer", "Tile.Music.Deezer", "Tile.Music.Description", "https://www.deezer.com/"),
+        new("Deezer", "Tile.Music.Deezer", "Tile.Music.Description", "https://www.deezer.com/collection/tracks"),
         new("YouTubeMusic", "Tile.Music.YouTubeMusic", "Tile.Music.Description", "https://music.youtube.com/")
     ];
     public bool IsSettingsSelected
@@ -556,6 +651,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             string.Equals(service.Id, settings.MusicService, StringComparison.OrdinalIgnoreCase))?.Id
             ?? "Spotify";
         ApplySelectedMusicService();
+        RefreshMusicVolume();
         try
         {
             SteamApiKey = _steamApiKeyStore.Load() ?? string.Empty;
@@ -770,8 +866,53 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 }
             }
 
+            var ownedGames = new List<GameEntry>();
+            _steamOwnedLibraryLoadFailed = false;
+            if (!string.IsNullOrWhiteSpace(SteamApiKey))
+            {
+                foreach (var provider in _gameProviders.OfType<ISteamOwnedGameProvider>())
+                {
+                    try
+                    {
+                        ownedGames.AddRange(await provider.ScanOwnedAsync(SteamApiKey, cancellationToken));
+                    }
+                    catch (HttpRequestException exception)
+                    {
+                        failedProviders++;
+                        _steamOwnedLibraryLoadFailed = true;
+                        Log.Warning(exception, "Could not load the Steam owned-games library.");
+                    }
+                    catch (IOException exception)
+                    {
+                        failedProviders++;
+                        _steamOwnedLibraryLoadFailed = true;
+                        Log.Warning(exception, "Could not read the local Steam profile for the owned-games library.");
+                    }
+                    catch (UnauthorizedAccessException exception)
+                    {
+                        failedProviders++;
+                        _steamOwnedLibraryLoadFailed = true;
+                        Log.Warning(exception, "Access was denied while reading the local Steam profile.");
+                    }
+                    catch (JsonException exception)
+                    {
+                        failedProviders++;
+                        _steamOwnedLibraryLoadFailed = true;
+                        Log.Warning(exception, "Steam returned invalid owned-games data.");
+                    }
+                    catch (InvalidOperationException exception)
+                    {
+                        failedProviders++;
+                        _steamOwnedLibraryLoadFailed = true;
+                        Log.Warning(exception, "The current Steam profile could not be identified.");
+                    }
+                }
+            }
+
             var uniqueGames = discoveredGames
-                .DistinctBy(game => $"{game.ProviderId}:{game.ExternalId}", StringComparer.OrdinalIgnoreCase);
+                .Concat(ownedGames)
+                .DistinctBy(game => $"{game.ProviderId}:{game.ExternalId}", StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             Games.Clear();
             foreach (var game in OrderGames(uniqueGames))
             {
@@ -788,6 +929,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateGamesStatusText();
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsGamesEmpty));
+            OnPropertyChanged(nameof(IsSteamOwnedGamesUnavailable));
+            OnPropertyChanged(nameof(SteamOwnedGamesStatusText));
             RefreshFilteredGames();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -801,7 +944,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void SaveSteamApiKey()
+    private async Task SaveSteamApiKeyAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -821,17 +964,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             Log.Error(exception, "Could not save the Steam API key.");
             AchievementsStatusText = LocalizationManager.Instance["Achievements.KeySaveFailed"];
+            return;
         }
         catch (UnauthorizedAccessException exception)
         {
             Log.Error(exception, "Access was denied while saving the Steam API key.");
             AchievementsStatusText = LocalizationManager.Instance["Achievements.KeySaveFailed"];
+            return;
         }
         catch (CryptographicException exception)
         {
             Log.Error(exception, "The Steam API key could not be encrypted.");
             AchievementsStatusText = LocalizationManager.Instance["Achievements.KeySaveFailed"];
+            return;
         }
+
+        await RefreshGamesAsync(cancellationToken);
     }
 
     [RelayCommand(CanExecute = nameof(CanLoadAchievements))]
@@ -964,8 +1112,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _clockTimer.Dispose();
+        _musicVolumeTimer.Dispose();
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
         GC.SuppressFinalize(this);
+    }
+
+    private void RefreshMusicVolume()
+    {
+        try
+        {
+            var volume = WindowsAudioSessionService.GetVolume(SelectedMusicService);
+            CanAdjustMusicVolume = volume.HasValue;
+            if (volume.HasValue)
+            {
+                _isUpdatingMusicVolume = true;
+                MusicVolume = volume.Value;
+            }
+        }
+        catch (COMException exception)
+        {
+            CanAdjustMusicVolume = false;
+            Log.Debug(exception, "Could not read the audio session for {MusicService}.", SelectedMusicService);
+        }
+        catch (Win32Exception exception)
+        {
+            CanAdjustMusicVolume = false;
+            Log.Debug(exception, "Could not read the volume for {MusicService}.", SelectedMusicService);
+        }
+        finally
+        {
+            _isUpdatingMusicVolume = false;
+        }
     }
 
     private void UpdateClock()
@@ -978,6 +1155,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(CurrentPageTitle));
         OnPropertyChanged(nameof(CurrentPageSubtitle));
+        OnPropertyChanged(nameof(SteamOwnedGamesStatusText));
         UpdateLocalizedProperties();
     }
 
@@ -1016,7 +1194,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void RefreshFilteredGames()
     {
-        var filtered = GameLibraryFilter.Filter(Games, GameSearchQuery, SelectedGameProvider);
+        var filtered = GameLibraryFilter.Filter(
+            Games,
+            GameSearchQuery,
+            SelectedGameProvider,
+            SelectedGameCollection);
         FilteredGames.Clear();
         foreach (var game in filtered)
         {
@@ -1025,6 +1207,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         OnPropertyChanged(nameof(HasFilteredGames));
         OnPropertyChanged(nameof(IsGameSearchEmpty));
+        OnPropertyChanged(nameof(IsSteamOwnedGamesUnavailable));
         FilteredGamesStatusText = string.Format(
             CultureInfo.CurrentCulture,
             LocalizationManager.Instance["Games.FilterCount"],
@@ -1039,13 +1222,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var count = Games.Count.ToString(CultureInfo.CurrentCulture);
+        var installedCount = Games.Count(game => game.IsInstalled).ToString(CultureInfo.CurrentCulture);
+        var ownedSteamCount = Games.Count(game => game.ProviderId == "steam" && game.IsOwned)
+            .ToString(CultureInfo.CurrentCulture);
         GamesStatusText = _failedGameProviders == 0
-            ? string.Format(CultureInfo.CurrentCulture, LocalizationManager.Instance["Games.ScanComplete"], count)
+            ? string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationManager.Instance["Games.ScanComplete"],
+                installedCount,
+                ownedSteamCount)
             : string.Format(
                 CultureInfo.CurrentCulture,
                 LocalizationManager.Instance["Games.ScanPartial"],
-                count,
+                installedCount,
+                ownedSteamCount,
                 _failedGameProviders);
     }
 

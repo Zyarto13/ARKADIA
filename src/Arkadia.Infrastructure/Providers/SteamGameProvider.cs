@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Net.Http;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Arkadia.Core.Models;
 using Arkadia.Core.Providers;
@@ -6,19 +9,30 @@ using Arkadia.Core.Services;
 
 namespace Arkadia.Infrastructure.Providers;
 
-public sealed partial class SteamGameProvider : IGameProvider
+public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGameProvider
 {
     private const string SteamworksCommonRedistributablesAppId = "228980";
     private const ulong SteamIdBase = 76561197960265728;
     private readonly string? _steamRoot;
     private readonly IExternalLauncher _launcher;
+    private readonly HttpClient _httpClient;
 
     public SteamGameProvider(
         IExternalLauncher launcher,
         string? steamRoot = null,
         string? steamUserDataDirectory = null)
+        : this(launcher, new HttpClient(), steamRoot, steamUserDataDirectory)
+    {
+    }
+
+    public SteamGameProvider(
+        IExternalLauncher launcher,
+        HttpClient httpClient,
+        string? steamRoot = null,
+        string? steamUserDataDirectory = null)
     {
         _launcher = launcher;
+        _httpClient = httpClient;
         _steamRoot = steamRoot ?? FindSteamRoot();
         _steamUserDataDirectory = steamUserDataDirectory
             ?? (_steamRoot is null ? null : Path.Combine(_steamRoot, "userdata"));
@@ -88,7 +102,8 @@ public sealed partial class SteamGameProvider : IGameProvider
                     true,
                     playtimeByAppId.TryGetValue(appId, out var playtimeMinutes)
                         ? playtimeMinutes
-                        : null));
+                        : null,
+                    FindSteamArtworkFilePath(appId, manifestDirectory, _steamRoot)));
             }
         }
 
@@ -97,6 +112,70 @@ public sealed partial class SteamGameProvider : IGameProvider
             .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
         return Task.FromResult(result);
+    }
+
+    public async Task<IReadOnlyList<GameEntry>> ScanOwnedAsync(
+        string apiKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new ArgumentException("A Steam Web API key is required.", nameof(apiKey));
+        }
+
+        var steamId = FindMostRecentSteamId()
+            ?? throw new InvalidOperationException("No recently used Steam profile could be found.");
+        var requestUri = new UriBuilder("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/")
+        {
+            Query = $"key={Uri.EscapeDataString(apiKey.Trim())}"
+                + $"&steamid={steamId}"
+                + "&include_appinfo=true"
+                + "&include_played_free_games=true"
+                + "&include_free_sub=true"
+        }.Uri;
+
+        using var response = await _httpClient.GetAsync(requestUri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+        if (!document.RootElement.TryGetProperty("response", out var responseBody)
+            || responseBody.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException("Steam did not return an owned-games response.");
+        }
+
+        if (!responseBody.TryGetProperty("games", out var gamesElement))
+        {
+            throw new InvalidOperationException(
+                "Steam did not return the owned-games list. The profile's game details may be private.");
+        }
+
+        if (gamesElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new JsonException("Steam returned an invalid owned-games list.");
+        }
+
+        return gamesElement.EnumerateArray()
+            .Select(game => new
+            {
+                AppId = GetUnsignedInteger(game, "appid"),
+                Title = GetString(game, "name"),
+                Playtime = GetUnsignedInteger(game, "playtime_forever")
+            })
+            .Where(game => game.AppId.HasValue && !string.IsNullOrWhiteSpace(game.Title))
+            .Select(game => new GameEntry(
+                Id,
+                game.AppId!.Value.ToString(CultureInfo.InvariantCulture),
+                game.Title!,
+                null,
+                false,
+                true,
+                game.Playtime is > 0
+                    ? (int)Math.Min(game.Playtime.Value, (uint)int.MaxValue)
+                    : null))
+            .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
     }
 
     public Task<LaunchResult> LaunchAsync(GameEntry game, CancellationToken cancellationToken)
@@ -134,6 +213,27 @@ public sealed partial class SteamGameProvider : IGameProvider
         return libraries;
     }
 
+    private static string? FindSteamArtworkFilePath(string appId, string librarySteamAppsDirectory, string steamRoot)
+    {
+        var artworkNames = new[]
+        {
+            $"{appId}_header.jpg",
+            $"{appId}_library_hero.jpg",
+            $"{appId}_library_hero_2x.jpg",
+            $"{appId}_library_600x900.jpg",
+            $"{appId}_library_600x900_2x.jpg"
+        };
+        var cacheDirectories = new[]
+        {
+            Path.Combine(steamRoot, "appcache", "librarycache"),
+            Path.Combine(librarySteamAppsDirectory, "librarycache")
+        };
+
+        return cacheDirectories
+            .SelectMany(directory => artworkNames.Select(name => Path.Combine(directory, name)))
+            .FirstOrDefault(File.Exists);
+    }
+
     private static string? FindSteamRoot()
     {
         var candidates = new[]
@@ -158,6 +258,33 @@ public sealed partial class SteamGameProvider : IGameProvider
         return null;
     }
 
+    private string? FindMostRecentSteamId()
+    {
+        if (_steamRoot is null)
+        {
+            return null;
+        }
+
+        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
+        if (!File.Exists(loginUsersPath))
+        {
+            return null;
+        }
+
+        var contents = File.ReadAllText(loginUsersPath);
+        foreach (Match user in UserBlockRegex().Matches(contents))
+        {
+            if (Regex.IsMatch(user.Groups["fields"].Value, "\"MostRecent\"\\s*\"1\"")
+                && ulong.TryParse(user.Groups["steamId"].Value, out var steamId)
+                && steamId >= SteamIdBase)
+            {
+                return steamId.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return null;
+    }
+
     private static string? ReadValue(string contents, string key)
     {
         var match = Regex.Match(
@@ -165,6 +292,19 @@ public sealed partial class SteamGameProvider : IGameProvider
             $"(?m)^\\s*\"{Regex.Escape(key)}\"\\s*\"(?<value>(?:\\\\.|[^\"])*)\"");
         return match.Success ? UnescapeVdf(match.Groups["value"].Value) : null;
     }
+
+    private static string? GetString(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var property)
+        && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
+
+    private static uint? GetUnsignedInteger(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var property)
+        && property.ValueKind == JsonValueKind.Number
+        && property.TryGetUInt32(out var value)
+            ? value
+            : null;
 
     private Dictionary<string, int> ReadPlaytimeMinutes()
     {

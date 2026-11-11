@@ -10,6 +10,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\arkadia.ico</ApplicationIcon>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
@@ -22,6 +23,11 @@
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="WPF-UI" />
     <PackageReference Include="TaskScheduler" />
+    <PackageReference Include="NAudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\arkadia.ico" />
   </ItemGroup>
 
 </Project>

@@ -30,7 +30,10 @@ public sealed record GameEntry(
             [
                 new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/header.jpg"),
                 new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/capsule_616x353.jpg"),
-                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg")
+                new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/library_600x900.jpg"),
+                new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/library_hero.jpg"),
+                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg"),
+                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/library_600x900.jpg")
             ]
             : [];
 

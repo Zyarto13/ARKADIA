@@ -10,7 +10,8 @@ public sealed class GameLibraryFilterTests
     [
         new("steam", "1", "Space Quest", null, true, true),
         new("epic", "2", "Space Tactics", null, true, true),
-        new("steam", "3", "Forest Run", null, true, true)
+        new("steam", "3", "Forest Run", null, true, true),
+        new("steam", "4", "Uninstalled Game", null, false, true)
     ];
 
     [Fact]
@@ -54,6 +55,26 @@ public sealed class GameLibraryFilterTests
     }
 
     [Fact]
+    public void FilterCanSelectInstalledAndOwnedCollections()
+    {
+        var installed = GameLibraryFilter.Filter(
+            Games,
+            null,
+            GameLibraryFilter.AllProviders,
+            GameLibraryFilter.InstalledGames);
+        var owned = GameLibraryFilter.Filter(
+            Games,
+            null,
+            GameLibraryFilter.AllProviders,
+            GameLibraryFilter.OwnedGames);
+
+        Assert.Equal(["Space Quest", "Space Tactics", "Forest Run"], installed.Select(game => game.Title));
+        Assert.Equal(
+            ["Space Quest", "Space Tactics", "Forest Run", "Uninstalled Game"],
+            owned.Select(game => game.Title));
+    }
+
+    [Fact]
     public void SteamGamesExposePrimaryAndFallbackArtworkUris()
     {
         var game = new GameEntry("steam", "1234", "Space Quest", null, true, true);
@@ -62,7 +83,10 @@ public sealed class GameLibraryFilterTests
             [
                 new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/header.jpg"),
                 new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/capsule_616x353.jpg"),
-                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg")
+                new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/library_600x900.jpg"),
+                new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/library_hero.jpg"),
+                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg"),
+                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/library_600x900.jpg")
             ],
             game.ArtworkUris);
     }

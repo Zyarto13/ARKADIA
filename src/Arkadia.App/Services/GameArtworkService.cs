@@ -72,6 +72,13 @@ public sealed class GameArtworkService
             return cachedArtwork;
         }
 
+        var localSteamArtwork = await TryLoadLocalSteamArtworkAsync(game);
+        if (localSteamArtwork is not null)
+        {
+            TryCacheArtwork(cachePath, localSteamArtwork.Value.Bytes);
+            return localSteamArtwork.Value.Image;
+        }
+
         await RequestLimit.WaitAsync();
         try
         {
@@ -124,6 +131,69 @@ public sealed class GameArtworkService
         finally
         {
             RequestLimit.Release();
+        }
+
+        return null;
+    }
+
+    private static async Task<(BitmapImage Image, byte[] Bytes)?> TryLoadLocalSteamArtworkAsync(GameEntry game)
+    {
+        if (game.ProviderId != "steam"
+            || !uint.TryParse(game.ExternalId, out _)
+            || string.IsNullOrWhiteSpace(game.InstallPath))
+        {
+            return null;
+        }
+
+        var candidates = new List<string>();
+        if (!string.IsNullOrWhiteSpace(game.ArtworkFilePath))
+        {
+            candidates.Add(game.ArtworkFilePath);
+        }
+
+        var directory = new DirectoryInfo(game.InstallPath);
+        while (directory is not null && !string.Equals(directory.Name, "common", StringComparison.OrdinalIgnoreCase))
+        {
+            directory = directory.Parent;
+        }
+
+        var steamAppsDirectory = directory?.Parent;
+        if (steamAppsDirectory is not null
+            && string.Equals(steamAppsDirectory.Name, "steamapps", StringComparison.OrdinalIgnoreCase))
+        {
+            candidates.AddRange(new[]
+            {
+                Path.Combine(steamAppsDirectory.FullName, "librarycache", $"{game.ExternalId}_header.jpg"),
+                Path.Combine(steamAppsDirectory.FullName, "librarycache", $"{game.ExternalId}_library_hero.jpg"),
+                Path.Combine(steamAppsDirectory.FullName, "librarycache", $"{game.ExternalId}_library_hero_2x.jpg"),
+                Path.Combine(steamAppsDirectory.FullName, "librarycache", $"{game.ExternalId}_library_600x900.jpg"),
+                Path.Combine(steamAppsDirectory.FullName, "librarycache", $"{game.ExternalId}_library_600x900_2x.jpg")
+            });
+        }
+        foreach (var candidatePath in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (!File.Exists(candidatePath))
+                {
+                    continue;
+                }
+
+                var bytes = await File.ReadAllBytesAsync(candidatePath);
+                return (DecodeArtwork(bytes), bytes);
+            }
+            catch (IOException exception)
+            {
+                Log.Debug(exception, "Could not read local Steam artwork for {GameTitle}.", game.Title);
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                Log.Debug(exception, "Access was denied while reading local Steam artwork for {GameTitle}.", game.Title);
+            }
+            catch (System.IO.FileFormatException exception)
+            {
+                Log.Debug(exception, "Local Steam artwork for {GameTitle} was not a supported image.", game.Title);
+            }
         }
 
         return null;

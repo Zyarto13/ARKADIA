@@ -51,6 +51,8 @@
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Impossible d’ouvrir cette application. Vérifiez qu’elle est installée.</value></data>
   <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Lire ou mettre Deezer en pause</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Lire le titre suivant</value></data>
+  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Volume Deezer</value></data>
+  <data name="Home.MediaControl.Favorites" xml:space="preserve"><value>Écouter un favori</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Commande envoyée au lecteur multimédia actif.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Impossible d’envoyer la commande multimédia.</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Dernier jeu joué</value></data>
@@ -122,7 +124,14 @@
   <data name="Games.Play" xml:space="preserve"><value>JOUER</value></data>
   <data name="Games.PlaytimeUnavailable" xml:space="preserve"><value>Indisponible</value></data>
   <data name="Games.Empty" xml:space="preserve"><value>Aucun jeu installé détecté. Installez des jeux avec Steam ou Epic Games, puis relancez la recherche.</value></data>
-  <data name="Games.ScanComplete" xml:space="preserve"><value>{0} jeux installés détectés.</value></data>
-  <data name="Games.ScanPartial" xml:space="preserve"><value>{0} jeux détectés ; échec de l’analyse de {1} lanceur(s). Consultez le journal.</value></data>
+  <data name="Games.ScanComplete" xml:space="preserve"><value>{0} jeux installés · {1} jeux possédés sur Steam.</value></data>
+  <data name="Games.ScanPartial" xml:space="preserve"><value>{0} jeux installés · {1} jeux Steam possédés ; l’analyse de {2} source(s) a échoué. Consultez le journal.</value></data>
+  <data name="Games.Collection.All" xml:space="preserve"><value>Tous</value></data>
+  <data name="Games.Collection.Installed" xml:space="preserve"><value>Installés</value></data>
+  <data name="Games.Collection.Owned" xml:space="preserve"><value>Bibliothèque</value></data>
+  <data name="Games.Install" xml:space="preserve"><value>Installer</value></data>
+  <data name="Games.InstallBadge" xml:space="preserve"><value>À installer</value></data>
+  <data name="Games.OwnedKeyRequired" xml:space="preserve"><value>Ajoutez votre clé Steam Web API dans Paramètres pour afficher les jeux Steam possédés. Le profil Steam doit être public.</value></data>
+  <data name="Games.OwnedScanFailed" xml:space="preserve"><value>Bibliothèque Steam indisponible : vérifiez la clé API, le profil public et la connexion.</value></data>
   <data name="Games.ProviderUnavailable" xml:space="preserve"><value>Le lanceur de ce jeu est indisponible.</value></data>
 </root>

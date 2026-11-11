@@ -141,6 +141,80 @@ public sealed class GameProviderTests
     }
 
     [Fact]
+    public async Task SteamProviderLoadsOwnedGamesForTheMostRecentPublicProfile()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "config"));
+            await File.WriteAllTextAsync(
+                Path.Combine(root, "config", "loginusers.vdf"),
+                """
+                "users"
+                {
+                    "76561197960265729"
+                    {
+                        "MostRecent" "1"
+                    }
+                }
+                """);
+
+            var handler = new FakeHttpMessageHandler(
+                """{"response":{"game_count":2,"games":[{"appid":1234,"name":"Example Game","playtime_forever":125},{"appid":5678,"name":"Untouched Game","playtime_forever":0}]}}""");
+            using var httpClient = new HttpClient(handler);
+            var provider = new SteamGameProvider(new FakeLauncher(), httpClient, root);
+
+            var games = await provider.ScanOwnedAsync("test-api-key", CancellationToken.None);
+
+            Assert.Equal(["Example Game", "Untouched Game"], games.Select(game => game.Title));
+            Assert.All(games, game =>
+            {
+                Assert.Equal("steam", game.ProviderId);
+                Assert.False(game.IsInstalled);
+                Assert.True(game.IsOwned);
+                Assert.Null(game.InstallPath);
+            });
+            Assert.Equal(125, games[0].PlaytimeMinutes);
+            Assert.Null(games[1].PlaytimeMinutes);
+            Assert.Contains("steamid=76561197960265729", handler.LastRequestUri!.Query);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SteamProviderReportsPrivateOwnedGameListsInsteadOfReturningAnEmptyLibrary()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "config"));
+            await File.WriteAllTextAsync(
+                Path.Combine(root, "config", "loginusers.vdf"),
+                """
+                "users"
+                {
+                    "76561197960265729"
+                    {
+                        "MostRecent" "1"
+                    }
+                }
+                """);
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler("""{"response":{}}"""));
+            var provider = new SteamGameProvider(new FakeLauncher(), httpClient, root);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => provider.ScanOwnedAsync("test-api-key", CancellationToken.None));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task EpicProviderFindsCompleteManifestsAndLaunchesByAppName()
     {
         var root = CreateTemporaryDirectory();
@@ -246,6 +320,23 @@ public sealed class GameProviderTests
             cancellationToken.ThrowIfCancellationRequested();
             LastUri = uri;
             return Task.FromResult(new LaunchResult(true));
+        }
+    }
+
+    private sealed class FakeHttpMessageHandler(string responseBody) : HttpMessageHandler
+    {
+        public Uri? LastRequestUri { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            LastRequestUri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseBody)
+            });
         }
     }
 }

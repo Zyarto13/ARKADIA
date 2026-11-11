@@ -120,6 +120,16 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <Style x:Key="GameCollectionButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource SurfaceButtonStyle}">
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
             <Style TargetType="ComboBox">
                 <Setter Property="Background" Value="{DynamicResource ComboBoxPopupBackgroundBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
