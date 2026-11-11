@@ -7,7 +7,8 @@ public sealed record GameEntry(
     string? InstallPath,
     bool IsInstalled,
     bool IsOwned,
-    int? PlaytimeMinutes = null)
+    int? PlaytimeMinutes = null,
+    string? ArtworkFilePath = null)
 {
     public bool HasPlaytime => PlaytimeMinutes is not null;
 
@@ -20,15 +21,16 @@ public sealed record GameEntry(
 
     public Uri? ArtworkUri =>
         ProviderId == "steam" && uint.TryParse(ExternalId, out _)
-            ? new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg")
+            ? new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/header.jpg")
             : null;
 
     public IReadOnlyList<Uri> ArtworkUris =>
         ProviderId == "steam" && uint.TryParse(ExternalId, out _)
             ?
             [
-                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg"),
-                new Uri($"https://steamcdn-a.akamaihd.net/steam/apps/{ExternalId}/header.jpg")
+                new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/header.jpg"),
+                new Uri($"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{ExternalId}/capsule_616x353.jpg"),
+                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg")
             ]
             : [];
 

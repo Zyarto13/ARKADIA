@@ -182,65 +182,104 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Style="{StaticResource TileButtonStyle}"
-                                            Margin="0,0,12,12"
-                                            MinHeight="164"
-                                            HorizontalContentAlignment="Stretch"
-                                            VerticalContentAlignment="Stretch">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="*" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Viewbox Width="190"
-                                                     Height="190"
-                                                     HorizontalAlignment="Right"
-                                                     VerticalAlignment="Bottom"
-                                                     Margin="0,0,-12,-12"
-                                                     IsHitTestVisible="False"
-                                                     OpacityMask="{StaticResource DiagonalLogoFade}">
-                                                <Path Data="{Binding TileIcon}"
-                                                      Fill="#BFFFFFFF"
-                                                      Stretch="Uniform"
-                                                      Width="190"
-                                                      Height="190" />
-                                            </Viewbox>
-                                            <StackPanel Grid.Row="0">
-                                                <Border Width="40"
-                                                        Height="40"
-                                                        CornerRadius="20"
-                                                        Background="{Binding BrandColor}"
-                                                        HorizontalAlignment="Left"
-                                                        Margin="0,0,0,15">
-                                                    <Grid>
-                                                        <Path Data="{Binding TileIcon}"
-                                                              Width="21"
-                                                              Height="21"
-                                                              Stretch="Uniform"
-                                                              Fill="White"
-                                                              HorizontalAlignment="Center"
-                                                              VerticalAlignment="Center" />
-                                                    </Grid>
-                                                </Border>
-                                                <TextBlock Text="{Binding Title}"
-                                                           FontSize="17"
-                                                           FontWeight="SemiBold" />
-                                                <TextBlock Text="{Binding Description}"
+                                    <Grid Margin="0,0,12,12" MinHeight="164">
+                                        <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource TileButtonStyle}"
+                                                HorizontalContentAlignment="Stretch"
+                                                VerticalContentAlignment="Stretch">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Viewbox Width="190"
+                                                         Height="190"
+                                                         HorizontalAlignment="Right"
+                                                         VerticalAlignment="Bottom"
+                                                         Margin="0,0,-12,-12"
+                                                         IsHitTestVisible="False"
+                                                         OpacityMask="{StaticResource DiagonalLogoFade}">
+                                                    <Path Data="{Binding TileIcon}"
+                                                          Fill="#BFFFFFFF"
+                                                          Stretch="Uniform"
+                                                          Width="190"
+                                                          Height="190" />
+                                                </Viewbox>
+                                                <StackPanel Grid.Row="0" Margin="0,0,0,34">
+                                                    <Border Width="40"
+                                                            Height="40"
+                                                            CornerRadius="20"
+                                                            Background="{Binding BrandColor}"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="0,0,0,15">
+                                                        <Grid>
+                                                            <Path Data="{Binding TileIcon}"
+                                                                  Width="21"
+                                                                  Height="21"
+                                                                  Stretch="Uniform"
+                                                                  Fill="White"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Title}"
+                                                               FontSize="17"
+                                                               FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding Description}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               FontSize="11"
+                                                               Margin="0,5,0,0"
+                                                               TextWrapping="Wrap"
+                                                               MaxWidth="220" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Row="1"
+                                                           Text="↗"
+                                                           HorizontalAlignment="Right"
                                                            Foreground="{DynamicResource TextSecondaryBrush}"
-                                                           FontSize="11"
-                                                           Margin="0,5,0,0"
-                                                           TextWrapping="Wrap"
-                                                           MaxWidth="220" />
-                                            </StackPanel>
-                                            <TextBlock Grid.Row="1"
-                                                       Text="↗"
-                                                       HorizontalAlignment="Right"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                                       FontSize="15" />
-                                        </Grid>
-                                    </Button>
+                                                           FontSize="15" />
+                                            </Grid>
+                                        </Button>
+                                        <StackPanel HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Orientation="Horizontal"
+                                                    Margin="20,0,48,18"
+                                                    Panel.ZIndex="1">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Id}" Value="deezer">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <Button Style="{StaticResource SurfaceButtonStyle}"
+                                                    Padding="10,6"
+                                                    Margin="0,0,8,0"
+                                                    Command="{Binding DataContext.ToggleMusicPlaybackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    ToolTip="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}">
+                                                <Path Data="M 3,2 H 7 V 14 H 3 Z M 11,2 H 15 V 14 H 11 Z"
+                                                      Fill="{DynamicResource TextPrimaryBrush}"
+                                                      Width="15"
+                                                      Height="15"
+                                                      Stretch="Uniform" />
+                                            </Button>
+                                            <Button Style="{StaticResource SurfaceButtonStyle}"
+                                                    Padding="10,6"
+                                                    Command="{Binding DataContext.PlayNextMusicTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    ToolTip="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}">
+                                                <Path Data="M 2,2 L 11,8 L 2,14 Z M 12,2 H 14 V 14 H 12 Z"
+                                                      Fill="{DynamicResource TextPrimaryBrush}"
+                                                      Width="15"
+                                                      Height="15"
+                                                      Stretch="Uniform" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -833,12 +872,11 @@
                                                         AutomationProperties.Name="{Binding Title}">
                                                     <Grid Background="#FF151A24"
                                                           ClipToBounds="True">
-                                                        <Image Source="{Binding ArtworkUri, IsAsync=True}"
-                                                               Tag="0"
-                                                               ImageFailed="GameArtwork_ImageFailed"
+                                                        <Image Loaded="GameArtwork_Loaded"
                                                                Stretch="UniformToFill"
                                                                Opacity="0.82" />
-                                                        <Border x:Name="GameArtworkFallback">
+                                                        <Border x:Name="GameArtworkFallback"
+                                                                Visibility="Collapsed">
                                                             <Border.Background>
                                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                                                     <GradientStop Color="#FF202847" Offset="0" />
@@ -846,16 +884,6 @@
                                                                     <GradientStop Color="#FF152331" Offset="1" />
                                                                 </LinearGradientBrush>
                                                             </Border.Background>
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ArtworkUri}" Value="{x:Null}">
-                                                                            <Setter Property="Visibility" Value="Visible" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
                                                             <Grid ClipToBounds="True">
                                                                 <Ellipse Width="210"
                                                                          Height="210"
@@ -873,13 +901,26 @@
                                                                          HorizontalAlignment="Right"
                                                                          VerticalAlignment="Top"
                                                                          Margin="0,-62,-44,0" />
-                                                                <TextBlock Text="{Binding [Games.ArtworkUnavailable], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                                           Foreground="{DynamicResource AccentBrush}"
-                                                                           FontSize="9"
-                                                                           FontWeight="SemiBold"
-                                                                           HorizontalAlignment="Right"
-                                                                           VerticalAlignment="Top"
-                                                                           Margin="0,17,17,0" />
+                                                                <StackPanel VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"
+                                                                            MaxWidth="250"
+                                                                            Margin="24">
+                                                                    <Path Data="M 4,6 C 2,6 1,8 1,11 L 2,16 C 2,18 4,19 6,18 L 9,15 H 15 L 18,18 C 20,19 22,18 22,16 L 23,11 C 23,8 22,6 20,6 H 4 Z M 7,8 V 13 M 4.5,10.5 H 9.5 M 17,9 H 17.1 M 20,12 H 20.1"
+                                                                          Fill="{DynamicResource AccentBrush}"
+                                                                          Width="44"
+                                                                          Height="44"
+                                                                          Stretch="Uniform"
+                                                                          HorizontalAlignment="Center"
+                                                                          Opacity="0.75" />
+                                                                    <TextBlock Text="{Binding Title}"
+                                                                               Foreground="#FFF4F7FF"
+                                                                               FontSize="19"
+                                                                               FontWeight="SemiBold"
+                                                                               TextAlignment="Center"
+                                                                               TextWrapping="Wrap"
+                                                                               MaxHeight="54"
+                                                                               Margin="0,13,0,0" />
+                                                                </StackPanel>
                                                             </Grid>
                                                         </Border>
                                                         <Border>

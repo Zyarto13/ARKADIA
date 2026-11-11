@@ -5,7 +5,8 @@
         <GradientStop Color="#FF171A36" Offset="0.52" />
         <GradientStop Color="#FF102C3A" Offset="1" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#E51D2240" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF1D2240" />
+    <SolidColorBrush x:Key="ComboBoxPopupBackgroundBrush" Color="#FF1D2240" />
     <SolidColorBrush x:Key="CardHoverBrush" Color="#FF292E52" />
     <SolidColorBrush x:Key="CardBorderBrush" Color="#4D99F6E4" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF4F7FF" />

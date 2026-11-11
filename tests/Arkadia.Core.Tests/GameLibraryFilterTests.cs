@@ -60,8 +60,9 @@ public sealed class GameLibraryFilterTests
 
         Assert.Equal(
             [
-                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg"),
-                new Uri("https://steamcdn-a.akamaihd.net/steam/apps/1234/header.jpg")
+                new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/header.jpg"),
+                new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/capsule_616x353.jpg"),
+                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg")
             ],
             game.ArtworkUris);
     }

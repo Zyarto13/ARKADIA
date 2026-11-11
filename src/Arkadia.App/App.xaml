@@ -121,7 +121,7 @@
                 </Setter>
             </Style>
             <Style TargetType="ComboBox">
-                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ComboBoxPopupBackgroundBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
@@ -192,7 +192,7 @@
                                        AllowsTransparency="True"
                                        Focusable="False"
                                        PopupAnimation="Fade">
-                                    <Border Background="{DynamicResource CardBackgroundBrush}"
+                                    <Border Background="{DynamicResource ComboBoxPopupBackgroundBrush}"
                                             BorderBrush="{DynamicResource CardBorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="11"
@@ -239,8 +239,8 @@
                                     <Setter TargetName="Surface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AccentBrush}" />
-                                    <Setter Property="Foreground" Value="#FF10131C" />
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.5" />

@@ -10,12 +10,17 @@ public partial class MainWindow : Window
 {
     private bool _isInitializingAppearance = true;
     private TrayIconService? _trayIconService;
+    private readonly GameArtworkService _gameArtworkService;
 
-    public MainWindow(ViewModels.MainViewModel viewModel, TrayIconService trayIconService)
+    public MainWindow(
+        ViewModels.MainViewModel viewModel,
+        TrayIconService trayIconService,
+        GameArtworkService gameArtworkService)
     {
         InitializeComponent();
         DataContext = viewModel;
         _trayIconService = trayIconService;
+        _gameArtworkService = gameArtworkService;
         trayIconService.Attach(this);
         Loaded += MainWindow_Loaded;
     }
@@ -42,35 +47,27 @@ public partial class MainWindow : Window
         }
     }
 
-    private void GameArtwork_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+    private async void GameArtwork_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.Image image || image.DataContext is not GameEntry game)
         {
             return;
         }
 
-        e.Handled = true;
-        var artworkUris = game.ArtworkUris;
-        var currentIndex = image.Tag is int index ? index : 0;
-        var nextIndex = currentIndex + 1;
-        if (nextIndex < artworkUris.Count)
+        var artwork = await _gameArtworkService.LoadArtworkAsync(game);
+        if (!image.IsLoaded || image.Parent is not Grid card)
         {
-            image.Tag = nextIndex;
-            image.Source = new System.Windows.Media.Imaging.BitmapImage(artworkUris[nextIndex]);
             return;
         }
 
-        image.Visibility = Visibility.Collapsed;
-        if (image.Parent is Grid card)
+        var fallback = card.Children
+            .OfType<FrameworkElement>()
+            .FirstOrDefault(child => child.Name == "GameArtworkFallback");
+        image.Visibility = artwork is null ? Visibility.Collapsed : Visibility.Visible;
+        image.Source = artwork;
+        if (fallback is not null)
         {
-            foreach (UIElement child in card.Children)
-            {
-                if (child is FrameworkElement { Name: "GameArtworkFallback" } fallback)
-                {
-                    fallback.Visibility = Visibility.Visible;
-                    break;
-                }
-            }
+            fallback.Visibility = artwork is null ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 

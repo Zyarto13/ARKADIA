@@ -49,6 +49,10 @@
   <data name="Home.Ready" xml:space="preserve"><value>Ready on this PC</value></data>
   <data name="Home.LaunchUnavailable" xml:space="preserve"><value>This item is not available yet.</value></data>
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Could not open this application. Check that it is installed.</value></data>
+  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Play or pause Deezer</value></data>
+  <data name="Home.MediaControl.Next" xml:space="preserve"><value>Play next track</value></data>
+  <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Media command sent to the active player.</value></data>
+  <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Could not send the media command.</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Last played</value></data>
   <data name="Tile.LastGame.Description" xml:space="preserve"><value>Your next session starts here</value></data>
   <data name="Tile.Steam" xml:space="preserve"><value>Steam</value></data>
@@ -81,7 +85,6 @@
   <data name="Settings.Theme.Light" xml:space="preserve"><value>Light</value></data>
   <data name="Settings.Theme.Black" xml:space="preserve"><value>Black</value></data>
   <data name="Settings.Theme.Aurora" xml:space="preserve"><value>Aurora</value></data>
-  <data name="Games.ArtworkUnavailable" xml:space="preserve"><value>ARTWORK NOT AVAILABLE</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Language</value></data>
   <data name="Settings.MusicService" xml:space="preserve"><value>Home music service</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>

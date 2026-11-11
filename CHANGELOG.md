@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6
+
+- Fixed game artwork loading by switching to Steam's current CDN, matching Epic game titles against Steam's public store catalog, and using installed Epic game icons when no store image exists.
+- Added Deezer tile controls for play/pause and next track using Windows media keys.
+- Made theme dropdowns opaque with theme-aware text and selection contrast.
+
 ## 1.0.5
 
 - Added the Aurora theme with a dark indigo, teal, and mint palette.

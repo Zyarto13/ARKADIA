@@ -75,6 +75,7 @@ public partial class App : System.Windows.Application, IDisposable
                 services.AddSingleton<Core.Services.IGameAchievementService>(serviceProvider =>
                     new SteamAchievementService(serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<HttpClient>();
+                services.AddSingleton<GameArtworkService>();
                 services.AddSingleton<GitHubUpdateService>();
                 services.AddSingleton<SteamApiKeyStore>();
                 services.AddSingleton<ThemeService>();

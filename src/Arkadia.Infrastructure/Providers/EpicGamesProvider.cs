@@ -58,7 +58,15 @@ public sealed class EpicGamesProvider : IGameProvider
                 continue;
             }
 
-            games.Add(new GameEntry(Id, appName, title, installLocation, true, true));
+            var artworkFilePath = FindArtworkFilePath(root, installLocation);
+            games.Add(new GameEntry(
+                Id,
+                appName,
+                title,
+                installLocation,
+                true,
+                true,
+                ArtworkFilePath: artworkFilePath));
         }
 
         IReadOnlyList<GameEntry> result = games
@@ -89,6 +97,43 @@ public sealed class EpicGamesProvider : IGameProvider
         && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
+
+    private static string? FindArtworkFilePath(JsonElement manifest, string installLocation)
+    {
+        var executable = ReadString(manifest, "LaunchExecutable");
+        if (string.IsNullOrWhiteSpace(executable)
+            || !string.Equals(Path.GetExtension(executable), ".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            var installRoot = Path.GetFullPath(installLocation);
+            var executablePath = Path.GetFullPath(Path.Combine(installRoot, executable));
+            if (!executablePath.StartsWith(
+                    installRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(executablePath))
+            {
+                return null;
+            }
+
+            return executablePath;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
 
     private static bool IsIncomplete(JsonElement element) =>
         element.TryGetProperty("bIsIncomplete", out var property)

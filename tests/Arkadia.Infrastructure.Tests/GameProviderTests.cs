@@ -129,7 +129,7 @@ public sealed class GameProviderTests
             var game = Assert.Single(await provider.ScanInstalledAsync(CancellationToken.None));
 
             Assert.Equal(125, game.PlaytimeMinutes);
-            Assert.Equal(new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg"), game.ArtworkUri);
+            Assert.Equal(new Uri("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1234/header.jpg"), game.ArtworkUri);
             Assert.Equal(
                 string.Format(CultureInfo.CurrentCulture, "{0:0.#} h", 125 / 60d),
                 game.PlaytimeText);
@@ -148,11 +148,14 @@ public sealed class GameProviderTests
         {
             var installPath = Path.Combine(root, "installed");
             Directory.CreateDirectory(installPath);
+            var executablePath = Path.Combine(installPath, "ExampleGame.exe");
+            await File.WriteAllBytesAsync(executablePath, [0]);
             await WriteEpicManifestAsync(root, "installed.item", new
             {
                 AppName = "ExampleGame",
                 DisplayName = "Example Game",
                 InstallLocation = installPath,
+                LaunchExecutable = "ExampleGame.exe",
                 bIsIncomplete = false
             });
             await WriteEpicManifestAsync(root, "incomplete.item", new
@@ -168,6 +171,7 @@ public sealed class GameProviderTests
             var game = Assert.Single(await provider.ScanInstalledAsync(CancellationToken.None));
 
             Assert.Equal("Example Game", game.Title);
+            Assert.Equal(executablePath, game.ArtworkFilePath);
             var result = await provider.LaunchAsync(game, CancellationToken.None);
 
             Assert.True(result.Succeeded);

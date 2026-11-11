@@ -722,6 +722,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
             : LocalizationManager.Instance["Home.LaunchFailed"];
     }
 
+    [RelayCommand]
+    private void ToggleMusicPlayback()
+    {
+        SendDeezerMediaCommand(
+            MediaControlService.TogglePlayPause,
+            "Home.MediaControl.Pause");
+    }
+
+    [RelayCommand]
+    private void PlayNextMusicTrack()
+    {
+        SendDeezerMediaCommand(
+            MediaControlService.PlayNextTrack,
+            "Home.MediaControl.Next");
+    }
+
     [RelayCommand(CanExecute = nameof(CanRefreshGames))]
     private async Task RefreshGamesAsync(CancellationToken cancellationToken)
     {
@@ -1058,6 +1074,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
             service.TitleKey,
             service.DescriptionKey,
             service.LaunchUri);
+    }
+
+    private void SendDeezerMediaCommand(Action sendCommand, string commandName)
+    {
+        if (!string.Equals(SelectedMusicService, "Deezer", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            sendCommand();
+            LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Sent"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not send the Deezer media command {CommandName}.", commandName);
+            LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Failed"];
+        }
     }
 
 
