@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.14
+
+- Added a library filter for owned games that are not installed yet, so they can be launched through their platform to install.
+- Restored the Steam achievement game chooser as a scrollable, virtualized list in its existing column.
+- Includes the Sounds-page crash fix from 1.0.13 for users updating directly from 1.0.12.
+
 ## 1.0.13
 
 - Fixed a crash when opening the Sounds page: audio-level progress bars now use one-way bindings for read-only meter values.

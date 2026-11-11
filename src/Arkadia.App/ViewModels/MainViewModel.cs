@@ -220,7 +220,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool HasFilteredGames => FilteredGames.Count > 0;
     public bool IsGameSearchEmpty => HasGames && !HasFilteredGames && !IsSteamOwnedGamesUnavailable;
     public bool IsSteamOwnedGamesUnavailable =>
-        SelectedGameCollection == GameLibraryFilter.OwnedGames
+        (SelectedGameCollection is GameLibraryFilter.OwnedGames or GameLibraryFilter.NotInstalledGames)
         && (string.IsNullOrWhiteSpace(SteamApiKey) || _steamOwnedLibraryLoadFailed);
     public string SteamOwnedGamesStatusText => string.IsNullOrWhiteSpace(SteamApiKey)
         ? LocalizationManager.Instance["Games.OwnedKeyRequired"]
@@ -332,7 +332,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (collection is GameLibraryFilter.AllGames
             or GameLibraryFilter.InstalledGames
-            or GameLibraryFilter.OwnedGames)
+            or GameLibraryFilter.OwnedGames
+            or GameLibraryFilter.NotInstalledGames)
         {
             SelectedGameCollection = collection;
         }
@@ -348,6 +349,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(IsAllGamesSelected));
                 OnPropertyChanged(nameof(IsInstalledGamesSelected));
                 OnPropertyChanged(nameof(IsOwnedGamesSelected));
+                OnPropertyChanged(nameof(IsNotInstalledGamesSelected));
                 RefreshFilteredGames();
                 OnPropertyChanged(nameof(IsSteamOwnedGamesUnavailable));
             }
@@ -357,6 +359,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsAllGamesSelected => SelectedGameCollection == GameLibraryFilter.AllGames;
     public bool IsInstalledGamesSelected => SelectedGameCollection == GameLibraryFilter.InstalledGames;
     public bool IsOwnedGamesSelected => SelectedGameCollection == GameLibraryFilter.OwnedGames;
+    public bool IsNotInstalledGamesSelected => SelectedGameCollection == GameLibraryFilter.NotInstalledGames;
 
     public string FilteredGamesStatusText
     {

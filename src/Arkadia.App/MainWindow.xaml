@@ -594,15 +594,93 @@
                                         <TextBlock Text="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}"
                                                    FontWeight="SemiBold"
                                                    Margin="2,0,0,12" />
-                                        <ComboBox ItemsSource="{Binding SteamGames}"
-                                                  SelectedItem="{Binding SelectedAchievementGame, Mode=TwoWay}"
-                                                  DisplayMemberPath="Title"
-                                                  MaxDropDownHeight="520"
-                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                  ScrollViewer.CanContentScroll="True"
-                                                  VirtualizingPanel.IsVirtualizing="True"
-                                                  VirtualizingPanel.VirtualizationMode="Recycling"
-                                                  ToolTip="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                        <ListBox ItemsSource="{Binding SteamGames}"
+                                                 SelectedItem="{Binding SelectedAchievementGame, Mode=TwoWay}"
+                                                 MaxHeight="560"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0"
+                                                 Focusable="False"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 ScrollViewer.CanContentScroll="True"
+                                                 VirtualizingPanel.IsVirtualizing="True"
+                                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                                 VirtualizingPanel.ScrollUnit="Pixel"
+                                                 ToolTip="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <VirtualizingStackPanel />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="Margin" Value="0,0,0,7" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    <Setter Property="Focusable" Value="False" />
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <Border Background="{TemplateBinding Background}"
+                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                                        CornerRadius="10">
+                                                                    <ContentPresenter />
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsSelected" Value="True">
+                                                                        <Setter Property="Background" Value="#22FFFFFF" />
+                                                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                                        <Setter Property="BorderThickness" Value="1" />
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#12FFFFFF"
+                                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="10"
+                                                            Padding="8">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="54" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Width="46"
+                                                                    Height="38"
+                                                                    CornerRadius="7"
+                                                                    Background="#20FFFFFF"
+                                                                    ClipToBounds="True"
+                                                                    VerticalAlignment="Center">
+                                                                <Image Source="{Binding ArtworkUri}"
+                                                                       Stretch="UniformToFill" />
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1"
+                                                                        VerticalAlignment="Center"
+                                                                        Margin="9,0,0,0">
+                                                                <TextBlock Text="{Binding Title}"
+                                                                           FontSize="12"
+                                                                           FontWeight="SemiBold"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Text="{Binding ProviderDisplayName}"
+                                                                           FontSize="10"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                           Margin="0,3,0,0" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
                                     </StackPanel>
                                 </Border>
                                 <Grid Grid.Column="1">
@@ -969,6 +1047,12 @@
                                                 Tag="{Binding IsOwnedGamesSelected}"
                                                 Command="{Binding SelectGameCollectionCommand}"
                                                 CommandParameter="owned" />
+                                        <Button Content="{Binding [Games.Collection.NotInstalled], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Style="{StaticResource GameCollectionButtonStyle}"
+                                                Tag="{Binding IsNotInstalledGamesSelected}"
+                                                Command="{Binding SelectGameCollectionCommand}"
+                                                CommandParameter="not-installed"
+                                                AutomationProperties.Name="{Binding [Games.Collection.NotInstalled], Source={x:Static loc:LocalizationManager.Instance}}" />
                                     </StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>

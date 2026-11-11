@@ -185,7 +185,8 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
             return Task.FromResult(new LaunchResult(false, "The Steam game entry is invalid."));
         }
 
-        return _launcher.OpenUriAsync($"steam://rungameid/{game.ExternalId}", cancellationToken);
+        var action = game.IsInstalled ? "rungameid" : "install";
+        return _launcher.OpenUriAsync($"steam://{action}/{game.ExternalId}", cancellationToken);
     }
 
     private static HashSet<string> FindLibraries(string steamRoot)

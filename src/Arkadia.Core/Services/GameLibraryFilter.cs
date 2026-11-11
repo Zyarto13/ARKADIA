@@ -8,6 +8,7 @@ public static class GameLibraryFilter
     public const string AllGames = "all";
     public const string InstalledGames = "installed";
     public const string OwnedGames = "owned";
+    public const string NotInstalledGames = "not-installed";
 
     public static IEnumerable<GameEntry> MergeDuplicates(IEnumerable<GameEntry> games)
     {
@@ -49,7 +50,10 @@ public static class GameLibraryFilter
                 || game.ProviderId.Equals(provider, StringComparison.OrdinalIgnoreCase))
             && (selectedCollection.Equals(AllGames, StringComparison.OrdinalIgnoreCase)
                 || selectedCollection.Equals(InstalledGames, StringComparison.OrdinalIgnoreCase) && game.IsInstalled
-                || selectedCollection.Equals(OwnedGames, StringComparison.OrdinalIgnoreCase) && game.IsOwned)
+                || selectedCollection.Equals(OwnedGames, StringComparison.OrdinalIgnoreCase) && game.IsOwned
+                || selectedCollection.Equals(NotInstalledGames, StringComparison.OrdinalIgnoreCase)
+                    && game.IsOwned
+                    && !game.IsInstalled)
             && (string.IsNullOrEmpty(search)
                 || game.Title.Contains(search, StringComparison.OrdinalIgnoreCase)));
     }

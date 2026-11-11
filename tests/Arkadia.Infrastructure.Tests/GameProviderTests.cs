@@ -81,6 +81,19 @@ public sealed class GameProviderTests
     }
 
     [Fact]
+    public async Task SteamProviderStartsInstallationForUninstalledGame()
+    {
+        var launcher = new FakeLauncher();
+        var provider = new SteamGameProvider(launcher, steamRoot: null);
+        var game = new GameEntry("steam", "1234", "Example Game", null, false, true);
+
+        var result = await provider.LaunchAsync(game, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("steam://install/1234", launcher.LastUri);
+    }
+
+    [Fact]
     public async Task SteamProviderReadsPlaytimeFromTheMostRecentLocalProfile()
     {
         var root = CreateTemporaryDirectory();

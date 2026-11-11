@@ -131,6 +131,7 @@
   <data name="Games.Collection.All" xml:space="preserve"><value>Tous</value></data>
   <data name="Games.Collection.Installed" xml:space="preserve"><value>Installés</value></data>
   <data name="Games.Collection.Owned" xml:space="preserve"><value>Bibliothèque</value></data>
+  <data name="Games.Collection.NotInstalled" xml:space="preserve"><value>À installer</value></data>
   <data name="Games.Install" xml:space="preserve"><value>Installer</value></data>
   <data name="Games.InstallBadge" xml:space="preserve"><value>À installer</value></data>
   <data name="Games.OwnedKeyRequired" xml:space="preserve"><value>Ajoutez votre clé Steam Web API dans Paramètres pour afficher les jeux Steam possédés. Le profil Steam doit être public.</value></data>

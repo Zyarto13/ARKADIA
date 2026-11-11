@@ -75,6 +75,18 @@ public sealed class GameLibraryFilterTests
     }
 
     [Fact]
+    public void FilterCanSelectOwnedGamesThatAreNotInstalled()
+    {
+        var result = GameLibraryFilter.Filter(
+            Games.Append(new GameEntry("epic", "5", "Unowned Game", null, false, false)),
+            null,
+            GameLibraryFilter.AllProviders,
+            GameLibraryFilter.NotInstalledGames);
+
+        Assert.Equal(["Uninstalled Game"], result.Select(game => game.Title));
+    }
+
+    [Fact]
     public void MergeDuplicatesPreservesInstalledMetadataAndOwnedPlaytime()
     {
         var installed = new GameEntry("steam", "123", "Space Quest", "C:\\Games\\Space Quest", true, true);
