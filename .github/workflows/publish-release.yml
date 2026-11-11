@@ -33,6 +33,9 @@ jobs:
             throw "Release tag $env:GITHUB_REF_NAME does not match application version $version."
           }
 
+      - name: Run tests
+        run: dotnet test .\Arkadia.sln --configuration Release
+
       - name: Build installer
         shell: pwsh
         run: .\scripts\build-installer.ps1

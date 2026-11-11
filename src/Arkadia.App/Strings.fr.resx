@@ -109,6 +109,11 @@
   <data name="Games.Subtitle" xml:space="preserve"><value>Jeux installés détectés sur ce PC.</value></data>
   <data name="Games.Refresh" xml:space="preserve"><value>Relancer la recherche</value></data>
   <data name="Games.SortPlaytime" xml:space="preserve"><value>Trier par temps de jeu ↓</value></data>
+  <data name="Games.Search" xml:space="preserve"><value>Rechercher un jeu installé</value></data>
+  <data name="Games.FilterProvider" xml:space="preserve"><value>Filtrer par plateforme</value></data>
+  <data name="Games.Provider.All" xml:space="preserve"><value>Toutes les plateformes</value></data>
+  <data name="Games.FilterCount" xml:space="preserve"><value>Affichage de {0} jeux correspondants.</value></data>
+  <data name="Games.NoMatches" xml:space="preserve"><value>Aucun jeu ne correspond à ces filtres. Essayez un autre titre ou une autre plateforme.</value></data>
   <data name="Games.Play" xml:space="preserve"><value>JOUER</value></data>
   <data name="Games.PlaytimeUnavailable" xml:space="preserve"><value>Indisponible</value></data>
   <data name="Games.Empty" xml:space="preserve"><value>Aucun jeu installé détecté. Installez des jeux avec Steam ou Epic Games, puis relancez la recherche.</value></data>

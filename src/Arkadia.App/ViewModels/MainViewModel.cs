@@ -37,6 +37,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly System.Threading.Timer _clockTimer;
     private readonly string _currentAppVersion;
+    private string _gameSearchQuery = string.Empty;
+    private string _selectedGameProvider = GameLibraryFilter.AllProviders;
+    private string _filteredGamesStatusText = string.Empty;
     private string _currentPageKey = "Home";
     private string _launchMessage = string.Empty;
     private string _comingSoonText = string.Empty;
@@ -106,6 +109,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             new("shortcuts", "▦", "Tile.Shortcuts", "Tile.Shortcuts.Description", navigationKey: "Shortcuts")
         ];
         Games = [];
+        FilteredGames = [];
         Achievements = [];
         Shortcuts = [];
 
@@ -123,6 +127,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
     public ObservableCollection<HomeTileViewModel> HomeTiles { get; }
     public ObservableCollection<GameEntry> Games { get; }
+    public ObservableCollection<GameEntry> FilteredGames { get; }
     public ObservableCollection<GameAchievement> Achievements { get; }
     public ObservableCollection<AppShortcut> Shortcuts { get; }
     public bool IsHome => _currentPageKey == "Home";
@@ -132,6 +137,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsSettings => _currentPageKey == "Settings";
     public bool IsComingSoon => !IsHome && !IsGames && !IsAchievements && !IsShortcuts && !IsSettings;
     public bool HasGames => Games.Count > 0;
+    public bool HasFilteredGames => FilteredGames.Count > 0;
+    public bool IsGameSearchEmpty => HasGames && !HasFilteredGames;
     public bool HasShortcuts => Shortcuts.Count > 0;
     public bool IsShortcutsEmpty => Shortcuts.Count == 0;
     public IEnumerable<GameEntry> SteamGames => Games.Where(game => game.ProviderId == "steam");
@@ -169,6 +176,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         get => _gamesStatusText;
         private set => SetProperty(ref _gamesStatusText, value);
+    }
+
+    public string GameSearchQuery
+    {
+        get => _gameSearchQuery;
+        set
+        {
+            if (SetProperty(ref _gameSearchQuery, value))
+            {
+                RefreshFilteredGames();
+            }
+        }
+    }
+
+    public string SelectedGameProvider
+    {
+        get => _selectedGameProvider;
+        set
+        {
+            if (SetProperty(ref _selectedGameProvider, value))
+            {
+                RefreshFilteredGames();
+            }
+        }
+    }
+
+    public string FilteredGamesStatusText
+    {
+        get => _filteredGamesStatusText;
+        private set => SetProperty(ref _filteredGamesStatusText, value);
     }
 
     public string AchievementsStatusText
@@ -735,6 +772,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateGamesStatusText();
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsGamesEmpty));
+            RefreshFilteredGames();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -882,6 +920,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             Games.Add(game);
         }
+        RefreshFilteredGames();
     }
 
     [RelayCommand]
@@ -931,6 +970,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ComingSoonText = LocalizationManager.Instance["Home.Empty"];
         ConnectivityText = LocalizationManager.Instance["Home.Ready"];
         UpdateGamesStatusText();
+        RefreshFilteredGames();
     }
 
     private bool CanRefreshGames() => !IsLoadingGames;
@@ -957,6 +997,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 .ThenByDescending(game => game.PlaytimeMinutes.GetValueOrDefault())
                 .ThenBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
             : games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase);
+
+    private void RefreshFilteredGames()
+    {
+        var filtered = GameLibraryFilter.Filter(Games, GameSearchQuery, SelectedGameProvider);
+        FilteredGames.Clear();
+        foreach (var game in filtered)
+        {
+            FilteredGames.Add(game);
+        }
+
+        OnPropertyChanged(nameof(HasFilteredGames));
+        OnPropertyChanged(nameof(IsGameSearchEmpty));
+        FilteredGamesStatusText = string.Format(
+            CultureInfo.CurrentCulture,
+            LocalizationManager.Instance["Games.FilterCount"],
+            FilteredGames.Count);
+    }
 
     private void UpdateGamesStatusText()
     {

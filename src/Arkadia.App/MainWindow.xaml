@@ -536,7 +536,7 @@
                                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                                Margin="6,0,0,0" />
                                                 </DockPanel>
-                                                <ProgressBar Value="{Binding AchievementProgress}"
+                                                <ProgressBar Value="{Binding AchievementProgress, Mode=OneWay}"
                                                              Maximum="1"
                                                              Height="5"
                                                              Margin="0,10,0,0" />
@@ -752,28 +752,69 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <DockPanel Grid.Row="0"
-                                           LastChildFill="False"
-                                           Margin="0,0,0,18">
-                                    <TextBlock Text="{Binding GamesStatusText}"
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                    <DockPanel LastChildFill="False" Margin="0,0,0,12">
+                                        <TextBlock Text="{Binding GamesStatusText}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   DockPanel.Dock="Left" />
+                                        <Button Content="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Command="{Binding SortGamesByPlaytimeCommand}"
+                                                Padding="14,8"
+                                                Margin="0,0,8,0"
+                                                HorizontalAlignment="Right"
+                                                DockPanel.Dock="Right" />
+                                        <Button Content="{Binding [Games.Refresh], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Command="{Binding RefreshGamesCommand}"
+                                                Padding="14,8"
+                                                HorizontalAlignment="Right"
+                                                DockPanel.Dock="Right" />
+                                    </DockPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="190" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Grid.Column="0" Margin="0,0,10,0">
+                                            <TextBox Text="{Binding GameSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="{Binding [Games.Search], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                     AutomationProperties.Name="{Binding [Games.Search], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                     Padding="12,9" />
+                                            <TextBlock Text="{Binding [Games.Search], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Margin="13,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding GameSearchQuery}" Value="">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+                                        <ComboBox Grid.Column="1"
+                                                  SelectedValue="{Binding SelectedGameProvider}"
+                                                  SelectedValuePath="Tag"
+                                                  ToolTip="{Binding [Games.FilterProvider], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                  AutomationProperties.Name="{Binding [Games.FilterProvider], Source={x:Static loc:LocalizationManager.Instance}}">
+                                            <ComboBoxItem Content="{Binding [Games.Provider.All], Source={x:Static loc:LocalizationManager.Instance}}" Tag="all" />
+                                            <ComboBoxItem Content="Steam" Tag="steam" />
+                                            <ComboBoxItem Content="Epic Games" Tag="epic" />
+                                        </ComboBox>
+                                    </Grid>
+                                    <TextBlock Text="{Binding FilteredGamesStatusText}"
                                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                               VerticalAlignment="Center"
-                                               DockPanel.Dock="Left" />
-                                    <Button Content="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}"
-                                            Command="{Binding SortGamesByPlaytimeCommand}"
-                                            Padding="14,8"
-                                            Margin="0,0,8,0"
-                                            HorizontalAlignment="Right"
-                                            DockPanel.Dock="Right" />
-                                    <Button Content="{Binding [Games.Refresh], Source={x:Static loc:LocalizationManager.Instance}}"
-                                            Command="{Binding RefreshGamesCommand}"
-                                            Padding="14,8"
-                                            HorizontalAlignment="Right"
-                                            DockPanel.Dock="Right" />
-                                </DockPanel>
+                                               FontSize="11"
+                                               Margin="2,8,0,0" />
+                                </StackPanel>
                                 <Grid Grid.Row="1">
-                                    <ItemsControl ItemsSource="{Binding Games}"
-                                                  Visibility="{Binding HasGames, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ItemsControl ItemsSource="{Binding FilteredGames}"
+                                                  Visibility="{Binding HasFilteredGames, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <UniformGrid Columns="3" />
@@ -859,6 +900,14 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    <TextBlock Text="{Binding [Games.NoMatches], Source={x:Static loc:LocalizationManager.Instance}}"
+                                               Visibility="{Binding IsGameSearchEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               MaxWidth="440" />
                                     <TextBlock Text="{Binding [Games.Empty], Source={x:Static loc:LocalizationManager.Instance}}"
                                                Visibility="{Binding IsGamesEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                Foreground="{DynamicResource TextSecondaryBrush}"

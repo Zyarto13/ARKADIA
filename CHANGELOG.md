@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Fixed a startup crash on the Achievements page by making the read-only progress binding explicitly one-way.
+- Added instant game-title search and platform filters to the installed library.
+
 ## 1.0.3
 
 - Added GitHub release checks and checksum-verified in-app updates for installed copies.
