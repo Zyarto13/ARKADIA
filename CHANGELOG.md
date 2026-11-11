@@ -1,12 +1,14 @@
 # Changelog
 
-## Unreleased
+## 1.0.7
 
 - Added a Steam-owned-games collection alongside installed games, with public Steam library lookup using the configured Web API key.
 - Improved Steam artwork fallback coverage with library-cover CDN sources and local cache images.
 - Added an optional per-app volume slider for music services when Windows exposes a matching audio session; the Deezer shortcut opens liked tracks when no dedicated Deezer account integration is configured.
 - Added an original ARKADIA inverted-V brand mark as the Windows application icon.
 - Limited Discord to launcher behavior; call controls and participant lists are not available through the supported Discord presence interface.
+
+## Unreleased
 
 ## 1.0.6
 
