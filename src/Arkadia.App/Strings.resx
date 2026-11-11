@@ -41,6 +41,7 @@
   <data name="Achievements.ProfileUnavailable" xml:space="preserve"><value>The recent local Steam profile could not be found. Sign in to Steam and restart ARKADIA.</value></data>
   <data name="Achievements.InvalidResponse" xml:space="preserve"><value>Steam returned invalid achievement data.</value></data>
   <data name="Achievements.GameUnavailable" xml:space="preserve"><value>Steam did not provide stats for this game. Check Game Details in Steam privacy settings; this is separate from profile visibility. Some games do not publish achievements.</value></data>
+  <data name="Achievements.ApiError" xml:space="preserve"><value>Steam API error: {0}</value></data>
   <data name="Achievements.NoneFound" xml:space="preserve"><value>Steam does not publish achievements for this game.</value></data>
   <data name="Home.Title" xml:space="preserve"><value>Home</value></data>
   <data name="Home.Subtitle" xml:space="preserve"><value>Everything you need, gathered in one place.</value></data>
@@ -134,5 +135,8 @@
   <data name="Games.InstallBadge" xml:space="preserve"><value>Not installed</value></data>
   <data name="Games.OwnedKeyRequired" xml:space="preserve"><value>Add your Steam Web API key in Settings to show owned Steam games. Your Steam profile must be public.</value></data>
   <data name="Games.OwnedScanFailed" xml:space="preserve"><value>Steam library unavailable. Check your API key, public profile, and connection.</value></data>
+  <data name="Games.OwnedScanFailedDetails" xml:space="preserve"><value>Could not read the Steam library ({0}). Check your API key, game details, and connection.</value></data>
+  <data name="Games.OwnedLocalProfileUnavailable" xml:space="preserve"><value>local Steam profile is inaccessible</value></data>
+  <data name="Games.OwnedInvalidResponse" xml:space="preserve"><value>invalid Steam API response</value></data>
   <data name="Games.ProviderUnavailable" xml:space="preserve"><value>The launcher for this game is unavailable.</value></data>
 </root>

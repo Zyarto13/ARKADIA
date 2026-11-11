@@ -183,7 +183,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,0,12,12" MinHeight="164">
+                                    <Grid Margin="0,0,12,12" Height="260">
                                         <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource TileButtonStyle}"

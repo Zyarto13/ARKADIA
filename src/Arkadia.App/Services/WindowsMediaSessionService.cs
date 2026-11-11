@@ -5,7 +5,11 @@ using Windows.Storage.Streams;
 
 namespace Arkadia.App.Services;
 
-public sealed record MusicSessionSnapshot(string Title, string Artist, BitmapImage? Artwork);
+public sealed record MusicSessionSnapshot(
+    string Title,
+    string Artist,
+    string SourceAppUserModelId,
+    BitmapImage? Artwork);
 
 public static class WindowsMediaSessionService
 {
@@ -29,7 +33,11 @@ public static class WindowsMediaSessionService
 
         return string.IsNullOrWhiteSpace(properties.Title)
             ? null
-            : new MusicSessionSnapshot(properties.Title, properties.Artist, artwork);
+            : new MusicSessionSnapshot(
+                properties.Title,
+                properties.Artist,
+                session.SourceAppUserModelId,
+                artwork);
     }
 
     private static async Task<BitmapImage?> LoadArtworkAsync(

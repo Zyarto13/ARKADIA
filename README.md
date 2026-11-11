@@ -33,7 +33,7 @@ The Settings page can check GitHub Releases and install updates without requirin
 
 1. Update `<Version>` in `src\Arkadia.App\Arkadia.App.csproj`.
 2. Push the changes to `main`.
-3. Create and push a matching version tag, for example `v1.0.8`.
+3. Create and push a matching version tag, for example `v1.0.9`.
 
 The `Publish release` workflow builds the x64 installer, creates a SHA-256 checksum, and publishes both as a GitHub Release. The app verifies the checksum before running the installer and restarting. GitHub Releases must be public for update checks to work without authentication.
 

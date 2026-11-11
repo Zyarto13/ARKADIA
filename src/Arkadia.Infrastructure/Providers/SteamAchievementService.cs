@@ -65,13 +65,20 @@ public sealed partial class SteamAchievementService : IGameAchievementService
             Query = $"key={Uri.EscapeDataString(apiKey)}&steamid={steamId}&appid={game.ExternalId}&l={language}"
         }.Uri;
         using var playerDocument = await GetJsonAsync(playerUri, cancellationToken);
-        var playerStats = playerDocument.RootElement.GetProperty("playerstats");
-        if (playerStats.TryGetProperty("success", out var success) && !success.GetBoolean())
+        if (!playerDocument.RootElement.TryGetProperty("playerstats", out var playerStats)
+            || playerStats.ValueKind != JsonValueKind.Object)
         {
-            var message = playerStats.TryGetProperty("error", out var error)
-                ? error.GetString()
-                : null;
-            throw new InvalidOperationException(message ?? "Steam did not return achievement data for this game.");
+            throw new JsonException("Steam did not return player achievement data.");
+        }
+
+        if (playerStats.TryGetProperty("success", out var success)
+            && success.ValueKind == JsonValueKind.False)
+        {
+            var message = GetString(playerStats, "error");
+            throw new InvalidOperationException(
+                string.IsNullOrWhiteSpace(message)
+                    ? "Steam did not return achievement data for this game."
+                    : SanitizeApiError(message));
         }
 
         var playerAchievements = playerStats.TryGetProperty("achievements", out var playerEntries)
@@ -187,6 +194,12 @@ public sealed partial class SteamAchievementService : IGameAchievementService
         && property.ValueKind == JsonValueKind.Number
         && property.TryGetInt32(out var value)
         && value != 0;
+
+    private static string SanitizeApiError(string message)
+    {
+        var sanitized = string.Concat(message.Where(character => !char.IsControl(character))).Trim();
+        return sanitized.Length <= 240 ? sanitized : sanitized[..240];
+    }
 
     [GeneratedRegex(
         "(?s)\"(?<steamId>7656119\\d{10})\"\\s*\\{(?<fields>[^{}]*)\\}",

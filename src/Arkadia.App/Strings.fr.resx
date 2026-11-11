@@ -41,6 +41,7 @@
   <data name="Achievements.ProfileUnavailable" xml:space="preserve"><value>Le profil Steam local récent est introuvable. Connectez-vous à Steam puis relancez ARKADIA.</value></data>
   <data name="Achievements.InvalidResponse" xml:space="preserve"><value>Steam a renvoyé une réponse de succès invalide.</value></data>
   <data name="Achievements.GameUnavailable" xml:space="preserve"><value>Steam ne communique pas les stats de ce jeu. Vérifiez « Détails du jeu » dans la confidentialité Steam : ce réglage est distinct du profil public. Certains jeux ne publient pas leurs succès.</value></data>
+  <data name="Achievements.ApiError" xml:space="preserve"><value>Erreur renvoyée par l’API Steam : {0}</value></data>
   <data name="Achievements.NoneFound" xml:space="preserve"><value>Aucun succès n’est publié par Steam pour ce jeu.</value></data>
   <data name="Home.Title" xml:space="preserve"><value>Accueil</value></data>
   <data name="Home.Subtitle" xml:space="preserve"><value>Tout ce dont vous avez besoin, au même endroit.</value></data>
@@ -134,5 +135,8 @@
   <data name="Games.InstallBadge" xml:space="preserve"><value>À installer</value></data>
   <data name="Games.OwnedKeyRequired" xml:space="preserve"><value>Ajoutez votre clé Steam Web API dans Paramètres pour afficher les jeux Steam possédés. Le profil Steam doit être public.</value></data>
   <data name="Games.OwnedScanFailed" xml:space="preserve"><value>Bibliothèque Steam indisponible : vérifiez la clé API, le profil public et la connexion.</value></data>
+  <data name="Games.OwnedScanFailedDetails" xml:space="preserve"><value>Échec de la lecture de la bibliothèque Steam ({0}). Vérifiez la clé API, les détails du jeu et la connexion.</value></data>
+  <data name="Games.OwnedLocalProfileUnavailable" xml:space="preserve"><value>profil Steam local inaccessible</value></data>
+  <data name="Games.OwnedInvalidResponse" xml:space="preserve"><value>réponse API Steam invalide</value></data>
   <data name="Games.ProviderUnavailable" xml:space="preserve"><value>Le lanceur de ce jeu est indisponible.</value></data>
 </root>

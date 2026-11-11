@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9
+
+- Restored compact dashboard tile sizing.
+- Matched music volume to the active Windows media session, including Deezer desktop sessions.
+- Exposed Steam API error details for owned-game and achievement requests instead of masking them as generic privacy failures.
+
 ## 1.0.8
 
 - Fixed Steam library merging so Steam API playtime is retained for installed games and zero-playtime games display correctly.

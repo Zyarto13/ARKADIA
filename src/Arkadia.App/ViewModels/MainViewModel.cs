@@ -61,12 +61,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private int _failedGameProviders;
     private bool _sortGamesByPlaytime;
     private bool _steamOwnedLibraryLoadFailed;
+    private string? _steamOwnedLibraryFailureDetail;
     private int _isRefreshingMediaSession;
     private bool _isUpdatingMusicVolume;
     private double _musicVolume;
     private bool _canAdjustMusicVolume;
     private string _currentTrackTitle = string.Empty;
     private string _currentTrackArtist = string.Empty;
+    private string? _currentTrackSourceAppUserModelId;
     private BitmapImage? _currentTrackArtwork;
     private string _steamApiKey = string.Empty;
     private string _achievementsStatusText = string.Empty;
@@ -167,6 +169,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         && (string.IsNullOrWhiteSpace(SteamApiKey) || _steamOwnedLibraryLoadFailed);
     public string SteamOwnedGamesStatusText => string.IsNullOrWhiteSpace(SteamApiKey)
         ? LocalizationManager.Instance["Games.OwnedKeyRequired"]
+        : !string.IsNullOrWhiteSpace(_steamOwnedLibraryFailureDetail)
+            ? string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationManager.Instance["Games.OwnedScanFailedDetails"],
+                _steamOwnedLibraryFailureDetail)
         : LocalizationManager.Instance["Games.OwnedScanFailed"];
     public bool HasShortcuts => Shortcuts.Count > 0;
     public bool IsShortcutsEmpty => Shortcuts.Count == 0;
@@ -420,7 +427,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 CanAdjustMusicVolume = WindowsAudioSessionService.TrySetVolume(
                     SelectedMusicService,
-                    (float)_musicVolume);
+                    (float)_musicVolume,
+                    _currentTrackSourceAppUserModelId);
             }
             catch (COMException exception)
             {
@@ -916,6 +924,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             var ownedGames = new List<GameEntry>();
             _steamOwnedLibraryLoadFailed = false;
+            _steamOwnedLibraryFailureDetail = null;
             if (!string.IsNullOrWhiteSpace(SteamApiKey))
             {
                 foreach (var provider in _gameProviders.OfType<ISteamOwnedGameProvider>())
@@ -928,30 +937,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     {
                         failedProviders++;
                         _steamOwnedLibraryLoadFailed = true;
+                        _steamOwnedLibraryFailureDetail = exception.StatusCode is { } statusCode
+                            ? $"HTTP {(int)statusCode} ({statusCode})"
+                            : exception.HttpRequestError.ToString();
                         Log.Warning(exception, "Could not load the Steam owned-games library.");
                     }
                     catch (IOException exception)
                     {
                         failedProviders++;
                         _steamOwnedLibraryLoadFailed = true;
+                        _steamOwnedLibraryFailureDetail = LocalizationManager.Instance["Games.OwnedLocalProfileUnavailable"];
                         Log.Warning(exception, "Could not read the local Steam profile for the owned-games library.");
                     }
                     catch (UnauthorizedAccessException exception)
                     {
                         failedProviders++;
                         _steamOwnedLibraryLoadFailed = true;
+                        _steamOwnedLibraryFailureDetail = LocalizationManager.Instance["Games.OwnedLocalProfileUnavailable"];
                         Log.Warning(exception, "Access was denied while reading the local Steam profile.");
                     }
                     catch (JsonException exception)
                     {
                         failedProviders++;
                         _steamOwnedLibraryLoadFailed = true;
+                        _steamOwnedLibraryFailureDetail = LocalizationManager.Instance["Games.OwnedInvalidResponse"];
                         Log.Warning(exception, "Steam returned invalid owned-games data.");
                     }
                     catch (InvalidOperationException exception)
                     {
                         failedProviders++;
                         _steamOwnedLibraryLoadFailed = true;
+                        _steamOwnedLibraryFailureDetail = exception.Message;
                         Log.Warning(exception, "The current Steam profile could not be identified.");
                     }
                 }
@@ -1122,7 +1138,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         catch (InvalidOperationException exception)
         {
             Log.Information(exception, "Steam achievements are unavailable for {GameId}.", selectedGame.ExternalId);
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.GameUnavailable"];
+            AchievementsStatusText = exception.Message switch
+            {
+                "No recently used Steam profile could be found." =>
+                    LocalizationManager.Instance["Achievements.ProfileUnavailable"],
+                "Steam did not expose an achievement schema for this game." =>
+                    LocalizationManager.Instance["Achievements.GameUnavailable"],
+                _ => string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Achievements.ApiError"],
+                    exception.Message)
+            };
         }
         finally
         {
@@ -1185,7 +1211,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var snapshot = await WindowsMediaSessionService.GetCurrentSessionAsync(CancellationToken.None);
             CurrentTrackTitle = snapshot?.Title ?? string.Empty;
             CurrentTrackArtist = snapshot?.Artist ?? string.Empty;
+            _currentTrackSourceAppUserModelId = snapshot?.SourceAppUserModelId;
             CurrentTrackArtwork = snapshot?.Artwork;
+            RefreshMusicVolume();
         }
         catch (COMException exception)
         {
@@ -1217,6 +1245,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         CurrentTrackTitle = string.Empty;
         CurrentTrackArtist = string.Empty;
+        _currentTrackSourceAppUserModelId = null;
         CurrentTrackArtwork = null;
     }
 
@@ -1230,7 +1259,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var volume = WindowsAudioSessionService.GetVolume(SelectedMusicService);
+            var volume = WindowsAudioSessionService.GetVolume(
+                SelectedMusicService,
+                _currentTrackSourceAppUserModelId);
             CanAdjustMusicVolume = volume.HasValue;
             if (volume.HasValue)
             {

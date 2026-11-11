@@ -158,6 +158,45 @@ public sealed class SteamAchievementServiceTests
     }
 
     [Fact]
+    public async Task PreservesTheSteamApiErrorWhenPlayerAchievementsAreUnavailable()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"arkadia-steam-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "config"));
+        await File.WriteAllTextAsync(
+            Path.Combine(root, "config", "loginusers.vdf"),
+            """
+            "users"
+            {
+                "76561197960265729"
+                {
+                    "MostRecent" "1"
+                }
+            }
+            """);
+
+        var handler = new FakeHttpMessageHandler(
+            """{"game":{"availableGameStats":{"achievements":[]}}}""",
+            """{"playerstats":{"success":false,"error":"Profile is not public"}}""");
+        using var httpClient = new HttpClient(handler);
+        var service = new SteamAchievementService(httpClient, root);
+
+        try
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.GetAchievementsAsync(
+                    new GameEntry("steam", "480", "Test game", null, true, true),
+                    "api-key",
+                    CancellationToken.None));
+
+            Assert.Equal("Profile is not public", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RejectsNonSteamGamesWithoutMakingARequest()
     {
         using var httpClient = new HttpClient(new FakeHttpMessageHandler("{}"));
