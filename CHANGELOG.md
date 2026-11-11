@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.12
+
+- Fixed a startup crash caused by selecting the home page before the audio meter timer was initialized.
+- Reworked achievement game selection into a compact Steam-only dropdown and virtualized the achievement list for smoother scrolling.
+- Cancelled outdated achievement requests when changing games so late responses cannot overwrite the current selection.
+
 ## 1.0.11
 
 - Added a localized Windows audio mixer with input/output device volume and mute controls, active app volume and real-time meters, and saved per-app volume profiles.

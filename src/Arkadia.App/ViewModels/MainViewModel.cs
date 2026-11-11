@@ -84,6 +84,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _achievementsStatusText = string.Empty;
     private GameEntry? _selectedAchievementGame;
     private bool _isLoadingAchievements;
+    private CancellationTokenSource? _achievementLoadCancellation;
+    private long _achievementLoadId;
     private string _shortcutNameInput = string.Empty;
     private string _shortcutUriInput = string.Empty;
     private string _updateStatusText = string.Empty;
@@ -141,7 +143,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         AudioInputDevices = [];
         AudioProfiles = [];
 
-        SelectPage("Home");
         LocalizationManager.Instance.PropertyChanged += LocalizationChanged;
         _audioDeviceNotificationService.DevicesChanged += AudioDevicesChanged;
         UpdateLocalizedProperties();
@@ -195,6 +196,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             null,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
+        SelectPage("Home");
     }
 
     public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
@@ -425,22 +427,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _selectedAchievementGame, value))
             {
+                CancelAchievementLoad();
                 Achievements.Clear();
                 OnPropertyChanged(nameof(HasAchievements));
                 OnPropertyChanged(nameof(UnlockedAchievementCount));
                 OnPropertyChanged(nameof(AchievementProgress));
+                AchievementsStatusText = value is null || value.ProviderId == "steam"
+                    ? string.Empty
+                    : LocalizationManager.Instance["Achievements.UnsupportedProvider"];
                 LoadAchievementsCommand.NotifyCanExecuteChanged();
             }
         }
     }
 
-    [RelayCommand]
-    private void SelectAchievementGame(GameEntry? game)
+    private void CancelAchievementLoad()
     {
-        SelectedAchievementGame = game;
-        AchievementsStatusText = game?.ProviderId == "steam"
-            ? string.Empty
-            : LocalizationManager.Instance["Achievements.UnsupportedProvider"];
+        Interlocked.Increment(ref _achievementLoadId);
+        Interlocked.Exchange(ref _achievementLoadCancellation, null)?.Cancel();
+        IsLoadingAchievements = false;
     }
 
     public bool IsLoadingAchievements
@@ -1593,13 +1597,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        var requestId = Interlocked.Increment(ref _achievementLoadId);
+        var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Interlocked.Exchange(ref _achievementLoadCancellation, requestCancellation)?.Cancel();
         IsLoadingAchievements = true;
         try
         {
             var achievements = await _gameAchievementService.GetAchievementsAsync(
                 selectedGame,
                 SteamApiKey,
-                cancellationToken);
+                requestCancellation.Token);
+            if (!IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
+            {
+                return;
+            }
+
             Achievements.Clear();
             foreach (var achievement in achievements)
             {
@@ -1627,13 +1639,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             throw;
         }
+        catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+        {
+            return;
+        }
         catch (OperationCanceledException exception)
         {
             Log.Warning(
                 "Steam achievement request timed out for {GameId}: {ErrorType}.",
                 selectedGame.ExternalId,
                 exception.GetType().Name);
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.RequestFailed"];
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
+            {
+                AchievementsStatusText = LocalizationManager.Instance["Achievements.RequestFailed"];
+            }
         }
         catch (HttpRequestException exception)
         {
@@ -1642,50 +1661,80 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 selectedGame.ExternalId,
                 exception.StatusCode,
                 exception.HttpRequestError);
-            AchievementsStatusText = exception.StatusCode switch
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
             {
-                System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden =>
-                    LocalizationManager.Instance["Achievements.AccessDenied"],
-                System.Net.HttpStatusCode.NotFound =>
-                    LocalizationManager.Instance["Achievements.GameUnavailable"],
-                _ => LocalizationManager.Instance["Achievements.RequestFailed"]
-            };
+                AchievementsStatusText = exception.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden =>
+                        LocalizationManager.Instance["Achievements.AccessDenied"],
+                    System.Net.HttpStatusCode.NotFound =>
+                        LocalizationManager.Instance["Achievements.GameUnavailable"],
+                    _ => LocalizationManager.Instance["Achievements.RequestFailed"]
+                };
+            }
         }
         catch (IOException exception)
         {
             Log.Warning(exception, "Could not read the local Steam profile.");
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.ProfileUnavailable"];
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
+            {
+                AchievementsStatusText = LocalizationManager.Instance["Achievements.ProfileUnavailable"];
+            }
         }
         catch (UnauthorizedAccessException exception)
         {
             Log.Warning(exception, "Access to the local Steam profile was denied.");
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.ProfileUnavailable"];
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
+            {
+                AchievementsStatusText = LocalizationManager.Instance["Achievements.ProfileUnavailable"];
+            }
         }
         catch (JsonException exception)
         {
             Log.Warning(exception, "Steam returned invalid achievement data for {GameId}.", selectedGame.ExternalId);
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.InvalidResponse"];
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
+            {
+                AchievementsStatusText = LocalizationManager.Instance["Achievements.InvalidResponse"];
+            }
         }
         catch (InvalidOperationException exception)
         {
             Log.Information(exception, "Steam achievements are unavailable for {GameId}.", selectedGame.ExternalId);
-            AchievementsStatusText = exception.Message switch
+            if (IsCurrentAchievementLoad(requestId, selectedGame, requestCancellation))
             {
-                "No recently used Steam profile could be found." =>
-                    LocalizationManager.Instance["Achievements.ProfileUnavailable"],
-                "Steam did not expose an achievement schema for this game." =>
-                    LocalizationManager.Instance["Achievements.GameUnavailable"],
-                _ => string.Format(
-                    CultureInfo.CurrentCulture,
-                    LocalizationManager.Instance["Achievements.ApiError"],
-                    exception.Message)
-            };
+                AchievementsStatusText = exception.Message switch
+                {
+                    "No recently used Steam profile could be found." =>
+                        LocalizationManager.Instance["Achievements.ProfileUnavailable"],
+                    "Steam did not expose an achievement schema for this game." =>
+                        LocalizationManager.Instance["Achievements.GameUnavailable"],
+                    _ => string.Format(
+                        CultureInfo.CurrentCulture,
+                        LocalizationManager.Instance["Achievements.ApiError"],
+                        exception.Message)
+                };
+            }
         }
         finally
         {
-            IsLoadingAchievements = false;
+            if (requestId == Volatile.Read(ref _achievementLoadId))
+            {
+                Interlocked.CompareExchange(ref _achievementLoadCancellation, null, requestCancellation);
+                IsLoadingAchievements = false;
+            }
+
+            requestCancellation.Dispose();
         }
     }
+
+    private bool IsCurrentAchievementLoad(
+        long requestId,
+        GameEntry selectedGame,
+        CancellationTokenSource requestCancellation) =>
+        requestId == Volatile.Read(ref _achievementLoadId)
+        && ReferenceEquals(SelectedAchievementGame, selectedGame)
+        && ReferenceEquals(Volatile.Read(ref _achievementLoadCancellation), requestCancellation)
+        && !requestCancellation.IsCancellationRequested;
 
     [RelayCommand]
     private void SortGamesByPlaytime()
@@ -1724,6 +1773,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        CancelAchievementLoad();
         _clockTimer.Dispose();
         _mediaSessionTimer.Dispose();
         _audioMeterTimer.Dispose();

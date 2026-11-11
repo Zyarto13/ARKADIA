@@ -590,56 +590,20 @@
                                         CornerRadius="14"
                                         Padding="14"
                                         Margin="0,0,14,0">
-                                    <DockPanel>
-                                        <TextBlock DockPanel.Dock="Top"
-                                                   Text="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}"
                                                    FontWeight="SemiBold"
                                                    Margin="2,0,0,12" />
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                      HorizontalScrollBarVisibility="Disabled"
-                                                      MaxHeight="560">
-                                            <ItemsControl ItemsSource="{Binding Games}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Button Command="{Binding DataContext.SelectAchievementGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                CommandParameter="{Binding}"
-                                                                Style="{StaticResource SurfaceButtonStyle}"
-                                                                HorizontalContentAlignment="Stretch"
-                                                                Padding="8"
-                                                                Margin="0,0,0,7">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="54" />
-                                                                    <ColumnDefinition Width="*" />
-                                                                </Grid.ColumnDefinitions>
-                                                                <Border Width="46"
-                                                                        Height="38"
-                                                                        CornerRadius="7"
-                                                                        Background="#20FFFFFF"
-                                                                        ClipToBounds="True"
-                                                                        VerticalAlignment="Center">
-                                                                    <Image Source="{Binding ArtworkUri}"
-                                                                           Stretch="UniformToFill" />
-                                                                </Border>
-                                                                <StackPanel Grid.Column="1"
-                                                                            VerticalAlignment="Center"
-                                                                            Margin="9,0,0,0">
-                                                                    <TextBlock Text="{Binding Title}"
-                                                                               FontSize="12"
-                                                                               FontWeight="SemiBold"
-                                                                               TextTrimming="CharacterEllipsis" />
-                                                                    <TextBlock Text="{Binding ProviderDisplayName}"
-                                                                               FontSize="10"
-                                                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                                                               Margin="0,3,0,0" />
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </Button>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </DockPanel>
+                                        <ComboBox ItemsSource="{Binding SteamGames}"
+                                                  SelectedItem="{Binding SelectedAchievementGame, Mode=TwoWay}"
+                                                  DisplayMemberPath="Title"
+                                                  MaxDropDownHeight="520"
+                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
+                                                  VirtualizingPanel.IsVirtualizing="True"
+                                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  ToolTip="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                    </StackPanel>
                                 </Border>
                                 <Grid Grid.Column="1">
                                     <Grid.RowDefinitions>
@@ -711,19 +675,49 @@
                                                              Margin="0,10,0,0" />
                                             </StackPanel>
                                         </Border>
-                                        <ScrollViewer Grid.Row="1"
-                                                      VerticalScrollBarVisibility="Auto"
-                                                      HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding Achievements}"
-                                                          Visibility="{Binding HasAchievements, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
+                                        <ListBox Grid.Row="1"
+                                                 ItemsSource="{Binding Achievements}"
+                                                 Visibility="{Binding HasAchievements, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 MaxHeight="560"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0"
+                                                 Focusable="False"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 ScrollViewer.CanContentScroll="True"
+                                                 VirtualizingPanel.IsVirtualizing="True"
+                                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                                 VirtualizingPanel.ScrollUnit="Pixel">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <VirtualizingStackPanel />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="Margin" Value="0,0,0,8" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    <Setter Property="Focusable" Value="False" />
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <ContentPresenter />
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
                                                         <Border Background="#12FFFFFF"
                                                                 BorderBrush="{DynamicResource CardBorderBrush}"
                                                                 BorderThickness="1"
                                                                 CornerRadius="12"
-                                                                Padding="12"
-                                                                Margin="0,0,0,8">
+                                                                Padding="12">
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="52" />
@@ -761,10 +755,9 @@
                                                                 </StackPanel>
                                                             </Grid>
                                                         </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
                                     </Grid>
                                 </Grid>
                             </Grid>
