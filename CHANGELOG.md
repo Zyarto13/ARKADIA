@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.13
+
+- Fixed a crash when opening the Sounds page: audio-level progress bars now use one-way bindings for read-only meter values.
+
 ## 1.0.12
 
 - Fixed a startup crash caused by selecting the home page before the audio meter timer was initialized.

@@ -1487,7 +1487,7 @@
                                                         </StackPanel>
                                                         <ProgressBar Minimum="0"
                                                                      Maximum="1"
-                                                                     Value="{Binding PeakLevel}"
+                                                                     Value="{Binding PeakLevel, Mode=OneWay}"
                                                                      Height="5"
                                                                      Margin="0,5,0,0"
                                                                      AutomationProperties.Name="{Binding [Sound.AudioLevel], Source={x:Static loc:LocalizationManager.Instance}}" />
