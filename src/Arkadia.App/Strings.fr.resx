@@ -80,6 +80,8 @@
   <data name="Settings.Theme.Blue" xml:space="preserve"><value>Bleu</value></data>
   <data name="Settings.Theme.Light" xml:space="preserve"><value>Clair</value></data>
   <data name="Settings.Theme.Black" xml:space="preserve"><value>Noir</value></data>
+  <data name="Settings.Theme.Aurora" xml:space="preserve"><value>Aurore boréale</value></data>
+  <data name="Games.ArtworkUnavailable" xml:space="preserve"><value>VISUEL INDISPONIBLE</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Langue</value></data>
   <data name="Settings.MusicService" xml:space="preserve"><value>Service musical de la tuile Accueil</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>Anglais</value></data>

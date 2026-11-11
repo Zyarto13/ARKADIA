@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Arkadia.Core.Models;
 using Arkadia.App.Services;
 using Arkadia.App.ViewModels;
 
@@ -36,6 +37,38 @@ public partial class MainWindow : Window
                         fallback.Visibility = Visibility.Visible;
                         break;
                     }
+                }
+            }
+        }
+    }
+
+    private void GameArtwork_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Image image || image.DataContext is not GameEntry game)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var artworkUris = game.ArtworkUris;
+        var currentIndex = image.Tag is int index ? index : 0;
+        var nextIndex = currentIndex + 1;
+        if (nextIndex < artworkUris.Count)
+        {
+            image.Tag = nextIndex;
+            image.Source = new System.Windows.Media.Imaging.BitmapImage(artworkUris[nextIndex]);
+            return;
+        }
+
+        image.Visibility = Visibility.Collapsed;
+        if (image.Parent is Grid card)
+        {
+            foreach (UIElement child in card.Children)
+            {
+                if (child is FrameworkElement { Name: "GameArtworkFallback" } fallback)
+                {
+                    fallback.Visibility = Visibility.Visible;
+                    break;
                 }
             }
         }

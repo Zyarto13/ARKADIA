@@ -80,6 +80,8 @@
   <data name="Settings.Theme.Blue" xml:space="preserve"><value>Blue</value></data>
   <data name="Settings.Theme.Light" xml:space="preserve"><value>Light</value></data>
   <data name="Settings.Theme.Black" xml:space="preserve"><value>Black</value></data>
+  <data name="Settings.Theme.Aurora" xml:space="preserve"><value>Aurora</value></data>
+  <data name="Games.ArtworkUnavailable" xml:space="preserve"><value>ARTWORK NOT AVAILABLE</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Language</value></data>
   <data name="Settings.MusicService" xml:space="preserve"><value>Home music service</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>

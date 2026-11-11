@@ -280,6 +280,7 @@
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Blue], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Blue" />
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Light], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Light" />
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Black], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Black" />
+                                            <ComboBoxItem Content="{Binding [Settings.Theme.Aurora], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Aurora" />
                                         </ComboBox>
                                         <TextBlock Text="{Binding [Settings.Language], Source={x:Static loc:LocalizationManager.Instance}}"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"
@@ -833,8 +834,54 @@
                                                     <Grid Background="#FF151A24"
                                                           ClipToBounds="True">
                                                         <Image Source="{Binding ArtworkUri, IsAsync=True}"
+                                                               Tag="0"
+                                                               ImageFailed="GameArtwork_ImageFailed"
                                                                Stretch="UniformToFill"
                                                                Opacity="0.82" />
+                                                        <Border x:Name="GameArtworkFallback">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                    <GradientStop Color="#FF202847" Offset="0" />
+                                                                    <GradientStop Color="#FF202847" Offset="0.55" />
+                                                                    <GradientStop Color="#FF152331" Offset="1" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ArtworkUri}" Value="{x:Null}">
+                                                                            <Setter Property="Visibility" Value="Visible" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <Grid ClipToBounds="True">
+                                                                <Ellipse Width="210"
+                                                                         Height="210"
+                                                                         Stroke="{DynamicResource AccentBrush}"
+                                                                         StrokeThickness="1"
+                                                                         Opacity="0.16"
+                                                                         HorizontalAlignment="Right"
+                                                                         VerticalAlignment="Top"
+                                                                         Margin="0,-92,-74,0" />
+                                                                <Ellipse Width="150"
+                                                                         Height="150"
+                                                                         Stroke="{DynamicResource AccentBrush}"
+                                                                         StrokeThickness="1"
+                                                                         Opacity="0.12"
+                                                                         HorizontalAlignment="Right"
+                                                                         VerticalAlignment="Top"
+                                                                         Margin="0,-62,-44,0" />
+                                                                <TextBlock Text="{Binding [Games.ArtworkUnavailable], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                           Foreground="{DynamicResource AccentBrush}"
+                                                                           FontSize="9"
+                                                                           FontWeight="SemiBold"
+                                                                           HorizontalAlignment="Right"
+                                                                           VerticalAlignment="Top"
+                                                                           Margin="0,17,17,0" />
+                                                            </Grid>
+                                                        </Border>
                                                         <Border>
                                                             <Border.Background>
                                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">

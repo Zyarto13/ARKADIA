@@ -52,4 +52,25 @@ public sealed class GameLibraryFilterTests
 
         Assert.Equal(Games, result);
     }
+
+    [Fact]
+    public void SteamGamesExposePrimaryAndFallbackArtworkUris()
+    {
+        var game = new GameEntry("steam", "1234", "Space Quest", null, true, true);
+
+        Assert.Equal(
+            [
+                new Uri("https://cdn.akamai.steamstatic.com/steam/apps/1234/header.jpg"),
+                new Uri("https://steamcdn-a.akamaihd.net/steam/apps/1234/header.jpg")
+            ],
+            game.ArtworkUris);
+    }
+
+    [Fact]
+    public void GamesWithoutSteamArtworkExposeNoArtworkUris()
+    {
+        var game = new GameEntry("epic", "1234", "Space Quest", null, true, true);
+
+        Assert.Empty(game.ArtworkUris);
+    }
 }

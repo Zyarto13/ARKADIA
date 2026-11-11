@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- Added the Aurora theme with a dark indigo, teal, and mint palette.
+- Replaced the default checkbox and dropdown visuals with rounded, high-contrast controls.
+- Added a Steam artwork fallback source and a designed game-card placeholder when artwork is unavailable.
+
 ## 1.0.4
 
 - Fixed a startup crash on the Achievements page by making the read-only progress binding explicitly one-way.

@@ -23,6 +23,15 @@ public sealed record GameEntry(
             ? new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg")
             : null;
 
+    public IReadOnlyList<Uri> ArtworkUris =>
+        ProviderId == "steam" && uint.TryParse(ExternalId, out _)
+            ?
+            [
+                new Uri($"https://cdn.akamai.steamstatic.com/steam/apps/{ExternalId}/header.jpg"),
+                new Uri($"https://steamcdn-a.akamaihd.net/steam/apps/{ExternalId}/header.jpg")
+            ]
+            : [];
+
     public string ProviderDisplayName => ProviderId switch
     {
         "steam" => "Steam",

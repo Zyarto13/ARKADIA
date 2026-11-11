@@ -7,7 +7,8 @@ public sealed class ThemeService
         {
             ["Blue"] = "Blue",
             ["Light"] = "Light",
-            ["Black"] = "Black"
+            ["Black"] = "Black",
+            ["Aurora"] = "Aurora"
         };
 
     private string _activeTheme = "Blue";
