@@ -92,7 +92,7 @@
                         <ControlTemplate TargetType="Slider">
                             <Grid Height="24">
                                 <Border Height="4"
-                                        Background="#408CA7C3"
+                                        Background="{DynamicResource CardBorderBrush}"
                                         CornerRadius="2"
                                         VerticalAlignment="Center" />
                                 <Track x:Name="PART_Track"
@@ -126,13 +126,50 @@
                                                                  Stroke="#F0FFFFFF"
                                                                  StrokeThickness="1.5"
                                                                  HorizontalAlignment="Center"
-                                                                 VerticalAlignment="Center" />
+                                                                 VerticalAlignment="Center">
+                                                            <Ellipse.Effect>
+                                                                <DropShadowEffect x:Name="ThumbGlow"
+                                                                                  Color="{DynamicResource AccentColor}"
+                                                                                  BlurRadius="0"
+                                                                                  ShadowDepth="0"
+                                                                                  Opacity="0"
+                                                                                  RenderingBias="Performance" />
+                                                            </Ellipse.Effect>
+                                                        </Ellipse>
                                                     </Grid>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
                                                             <Setter TargetName="ThumbCore" Property="Width" Value="12" />
                                                             <Setter TargetName="ThumbCore" Property="Height" Value="12" />
                                                         </Trigger>
+                                                        <EventTrigger RoutedEvent="MouseEnter">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbGlow"
+                                                                                     Storyboard.TargetProperty="BlurRadius"
+                                                                                     To="12"
+                                                                                     Duration="0:0:0.18" />
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbGlow"
+                                                                                     Storyboard.TargetProperty="Opacity"
+                                                                                     To="0.7"
+                                                                                     Duration="0:0:0.18" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                        <EventTrigger RoutedEvent="MouseLeave">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbGlow"
+                                                                                     Storyboard.TargetProperty="BlurRadius"
+                                                                                     To="0"
+                                                                                     Duration="0:0:0.2" />
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbGlow"
+                                                                                     Storyboard.TargetProperty="Opacity"
+                                                                                     To="0"
+                                                                                     Duration="0:0:0.2" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
                                                     </ControlTemplate.Triggers>
                                                 </ControlTemplate>
                                             </Thumb.Template>
@@ -155,8 +192,9 @@
                 </Setter>
             </Style>
             <Style x:Key="SurfaceButtonStyle" TargetType="Button">
+                <Setter Property="controls:ButtonInteractionBehavior.IsEnabled" Value="True" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-                <Setter Property="Background" Value="#18FFFFFF" />
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="14,9" />
@@ -164,26 +202,33 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Surface"
+                            <Border x:Name="InteractionSurface"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="10">
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                  Margin="{TemplateBinding Padding}"
-                                                  RecognizesAccessKey="True" />
+                                    CornerRadius="12"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      RecognizesAccessKey="True" />
+                                    <Canvas x:Name="InteractionRippleHost"
+                                            ClipToBounds="True"
+                                            IsHitTestVisible="False"
+                                            Panel.ZIndex="1" />
+                                </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="Surface" Property="Background" Value="#28FFFFFF" />
+                                    <Setter TargetName="InteractionSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Surface" Property="Opacity" Value="0.78" />
+                                    <Setter TargetName="InteractionSurface" Property="Opacity" Value="0.88" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Surface" Property="Opacity" Value="0.45" />
+                                    <Setter TargetName="InteractionSurface" Property="Opacity" Value="0.45" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -441,42 +486,80 @@
                 <GradientStop Color="#70FFFFFF" Offset="1" />
             </LinearGradientBrush>
             <Style x:Key="BrandButtonStyle" TargetType="Button">
+                <Setter Property="controls:ButtonInteractionBehavior.IsEnabled" Value="True" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="16,10" />
                 <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="InteractionSurface"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="12"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Margin="{TemplateBinding Padding}" />
+                                    <Canvas x:Name="InteractionRippleHost"
+                                            ClipToBounds="True"
+                                            IsHitTestVisible="False"
+                                            Panel.ZIndex="1" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
+                <Setter Property="controls:ButtonInteractionBehavior.IsEnabled" Value="True" />
                 <Setter Property="Height" Value="44" />
                 <Setter Property="Margin" Value="10,3" />
                 <Setter Property="Padding" Value="14,0" />
                 <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                 <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Surface"
+                            <Border x:Name="InteractionSurface"
                                     Background="{TemplateBinding Background}"
-                                    CornerRadius="13">
-                                <ContentPresenter HorizontalAlignment="Stretch"
-                                                  VerticalAlignment="Center"
-                                                  Margin="{TemplateBinding Padding}" />
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="13"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <ContentPresenter HorizontalAlignment="Stretch"
+                                                      VerticalAlignment="Center"
+                                                      Margin="{TemplateBinding Padding}" />
+                                    <Canvas x:Name="InteractionRippleHost"
+                                            ClipToBounds="True"
+                                            IsHitTestVisible="False"
+                                            Panel.ZIndex="1" />
+                                </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Tag" Value="True">
-                                    <Setter TargetName="Surface" Property="Background" Value="#40FFFFFF" />
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Surface" Property="Background" Value="#22FFFFFF" />
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource AccentBrush}" />
                                     <Setter Property="Foreground" Value="#FFFFFFFF" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
@@ -485,6 +568,7 @@
                 </Setter>
             </Style>
             <Style x:Key="TileButtonStyle" TargetType="Button">
+                <Setter Property="controls:ButtonInteractionBehavior.IsEnabled" Value="True" />
                 <Setter Property="Padding" Value="20" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
@@ -494,24 +578,31 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Surface"
+                            <Border x:Name="InteractionSurface"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="18"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter />
+                                    Padding="{TemplateBinding Padding}"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <ContentPresenter />
+                                    <Canvas x:Name="InteractionRippleHost"
+                                            ClipToBounds="True"
+                                            IsHitTestVisible="False"
+                                            Panel.ZIndex="1" />
+                                </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Surface" Property="Opacity" Value="0.82" />
+                                    <Setter TargetName="InteractionSurface" Property="Opacity" Value="0.88" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Surface" Property="Opacity" Value="0.55" />
+                                    <Setter TargetName="InteractionSurface" Property="Opacity" Value="0.55" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -519,35 +610,43 @@
                 </Setter>
             </Style>
             <Style x:Key="GameCardButtonStyle" TargetType="Button">
-                <Setter Property="Background" Value="#FF151A24" />
-                <Setter Property="BorderBrush" Value="#30FFFFFF" />
+                <Setter Property="controls:ButtonInteractionBehavior.IsEnabled" Value="True" />
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <controls:RoundedClipBorder x:Name="Card"
+                            <controls:RoundedClipBorder x:Name="InteractionSurface"
                                                         Background="{TemplateBinding Background}"
                                                         BorderBrush="{TemplateBinding BorderBrush}"
                                                         BorderThickness="{TemplateBinding BorderThickness}"
                                                         CornerRadius="16"
                                                         ClipToBounds="True">
-                                <ContentPresenter />
+                                <Grid>
+                                    <ContentPresenter />
+                                    <Canvas x:Name="InteractionRippleHost"
+                                            ClipToBounds="True"
+                                            IsHitTestVisible="False"
+                                            Panel.ZIndex="1" />
+                                </Grid>
                             </controls:RoundedClipBorder>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="Card" Property="BorderThickness" Value="1.5" />
+                                    <Setter TargetName="InteractionSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="InteractionSurface" Property="BorderThickness" Value="1.5" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Card" Property="Opacity" Value="0.88" />
+                                    <Setter TargetName="InteractionSurface" Property="Opacity" Value="0.92" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
+            <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

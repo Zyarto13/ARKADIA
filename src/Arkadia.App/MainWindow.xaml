@@ -46,8 +46,13 @@
                         CommandParameter="Home"
                         AutomationProperties.Name="ARKADIA">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Path Data="M12,1 L23,21 H18 L12,10 L6,21 H1 Z"
-                              Fill="{DynamicResource AccentBrush}"
+                        <Path Data="M 3,21 L 12,3 L 21,21"
+                              Fill="Transparent"
+                              Stroke="{DynamicResource AccentBrush}"
+                              StrokeThickness="2.8"
+                              StrokeLineJoin="Miter"
+                              StrokeStartLineCap="Flat"
+                              StrokeEndLineCap="Flat"
                               Width="23"
                               Height="23"
                               Stretch="Uniform"
@@ -450,6 +455,7 @@
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Light], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Light" />
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Black], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Black" />
                                             <ComboBoxItem Content="{Binding [Settings.Theme.Aurora], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Aurora" />
+                                            <ComboBoxItem Content="{Binding [Settings.Theme.Emerald], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Emerald" />
                                         </ComboBox>
                                         <TextBlock Text="{Binding [Settings.Language], Source={x:Static loc:LocalizationManager.Instance}}"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"

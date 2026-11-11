@@ -8,7 +8,8 @@ public sealed class ThemeService
             ["Blue"] = "Blue",
             ["Light"] = "Light",
             ["Black"] = "Black",
-            ["Aurora"] = "Aurora"
+            ["Aurora"] = "Aurora",
+            ["Emerald"] = "Emerald"
         };
 
     private string _activeTheme = "Blue";

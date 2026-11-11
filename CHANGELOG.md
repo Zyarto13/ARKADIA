@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.16
+
+- Refreshed the default dark theme with a graphite, high-contrast palette inspired by the new visual direction.
+- Added the deep Emerald theme to the appearance settings in English and French.
+- Reworked the ARKADIA mark as a sharp, minimal inverted V and updated the Windows application icon.
+- Added interaction-only hover glow, press response, and pointer-origin bubble ripples to buttons; respects Windows reduced-animation settings.
+
 ## 1.0.15
 
 - Fixed game selection in the Steam achievements list by restoring normal keyboard focus and selection behavior.

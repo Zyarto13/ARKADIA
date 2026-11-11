@@ -7,6 +7,7 @@
     <SolidColorBrush x:Key="CardBorderBrush" Color="#303C4C68" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF2F5FA" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF9AA3B5" />
+    <Color x:Key="AccentColor">#FF00D2FF</Color>
     <SolidColorBrush x:Key="AccentBrush" Color="#FF00D2FF" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#FF2ECC71" />
 </ResourceDictionary>
