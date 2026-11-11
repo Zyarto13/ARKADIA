@@ -195,9 +195,10 @@
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Image Source="{Binding DataContext.CurrentTrackArtwork, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                       Stretch="UniformToFill"
+                                                       Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"
                                                        IsHitTestVisible="False"
-                                                       Opacity="0.22">
+                                                       Opacity="0.78">
                                                     <Image.Style>
                                                         <Style TargetType="Image">
                                                             <Setter Property="Visibility" Value="Collapsed" />
@@ -600,7 +601,6 @@
                                                  Background="Transparent"
                                                  BorderThickness="0"
                                                  Padding="0"
-                                                 Focusable="False"
                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                  ScrollViewer.CanContentScroll="True"
@@ -621,7 +621,6 @@
                                                     <Setter Property="Padding" Value="0" />
                                                     <Setter Property="Margin" Value="0,0,0,7" />
                                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                                    <Setter Property="Focusable" Value="False" />
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="ListBoxItem">
@@ -1029,31 +1028,33 @@
                                             </StackPanel>
                                         </Button>
                                     </DockPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
                                         <Button Content="{Binding [Games.Collection.All], Source={x:Static loc:LocalizationManager.Instance}}"
                                                 Style="{StaticResource GameCollectionButtonStyle}"
                                                 Tag="{Binding IsAllGamesSelected}"
                                                 Command="{Binding SelectGameCollectionCommand}"
                                                 CommandParameter="all"
-                                                Margin="0,0,8,0" />
+                                                Margin="0,0,8,8" />
                                         <Button Content="{Binding [Games.Collection.Installed], Source={x:Static loc:LocalizationManager.Instance}}"
                                                 Style="{StaticResource GameCollectionButtonStyle}"
                                                 Tag="{Binding IsInstalledGamesSelected}"
                                                 Command="{Binding SelectGameCollectionCommand}"
                                                 CommandParameter="installed"
-                                                Margin="0,0,8,0" />
+                                                Margin="0,0,8,8" />
                                         <Button Content="{Binding [Games.Collection.Owned], Source={x:Static loc:LocalizationManager.Instance}}"
                                                 Style="{StaticResource GameCollectionButtonStyle}"
                                                 Tag="{Binding IsOwnedGamesSelected}"
                                                 Command="{Binding SelectGameCollectionCommand}"
-                                                CommandParameter="owned" />
+                                                CommandParameter="owned"
+                                                Margin="0,0,8,8" />
                                         <Button Content="{Binding [Games.Collection.NotInstalled], Source={x:Static loc:LocalizationManager.Instance}}"
                                                 Style="{StaticResource GameCollectionButtonStyle}"
                                                 Tag="{Binding IsNotInstalledGamesSelected}"
                                                 Command="{Binding SelectGameCollectionCommand}"
                                                 CommandParameter="not-installed"
+                                                Margin="0,0,8,8"
                                                 AutomationProperties.Name="{Binding [Games.Collection.NotInstalled], Source={x:Static loc:LocalizationManager.Instance}}" />
-                                    </StackPanel>
+                                    </WrapPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />

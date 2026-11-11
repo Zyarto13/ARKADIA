@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.15
+
+- Fixed game selection in the Steam achievements list by restoring normal keyboard focus and selection behavior.
+- Made game collection filters wrap cleanly instead of colliding at narrow window widths.
+- Updated the Deezer tile to show the full album artwork with high-quality scaling.
+
 ## 1.0.14
 
 - Added a library filter for owned games that are not installed yet, so they can be launched through their platform to install.
