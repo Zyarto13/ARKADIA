@@ -3,6 +3,8 @@
 ARKADIA is a Windows 11 desktop hub for games, achievements, sound, media, and shortcuts.
 The application targets .NET 8 and WPF and is designed to work locally first.
 
+The product requirements are maintained in [CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md).
+
 ## Requirements
 
 - Windows 11 (build 22621 or later), x64
@@ -38,6 +40,8 @@ The Settings page can check GitHub Releases and install updates without requirin
 The `Publish release` workflow builds the x64 installer, creates a SHA-256 checksum, and publishes both as a GitHub Release. The app verifies the checksum before running the installer and restarting. GitHub Releases must be public for update checks to work without authentication.
 
 The current working slice includes the WPF window, labeled navigation, localized dashboard, theme and language preferences, SQLite schema initialization, allowlisted launcher URIs, startup behavior, single-instance activation, and a notification-area menu. Windows startup uses Task Scheduler with a per-user Run-key fallback. The Games page scans installed Steam libraries and Epic Games manifests locally, launches games through their registered clients, and supports title search, platform filtering, playtime sorting, and a Steam-owned-games collection for public profiles. The owned collection uses the configured Steam Web API key; private profiles may not expose their games. Steam API playtime is merged with the local cache so installed-game entries retain the reported time. Game artwork is loaded from Steam's public store CDN, with extra Steam library-cover sources and local Steam artwork caches; Epic titles are matched against the public Steam store catalog when possible, and Epic's installed executable icon is used when no store image is available. Downloaded artwork is cached locally. The home music tile can be configured to launch Spotify, Deezer, or YouTube Music. Deezer has play/pause and next-track media-key controls for the active Windows media player, displays the active Windows media session's title, artist, and artwork, and has an optional per-app volume slider with direct numeric entry when Windows exposes a matching audio session. Its favorites shortcut opens Deezer's liked tracks when no media track is active. Steam achievements can be loaded for installed games with a Steam Web API key, which ARKADIA encrypts for the current Windows user using DPAPI. Steam's “Game Details” privacy setting is separate from profile visibility and must allow stats access for achievements. The Shortcuts page saves up to 30 personal HTTPS or supported app links locally. A self-contained Windows installer creates Start Menu and optional desktop shortcuts. Cloud library sync, telemetry, and Discord Rich Presence remain in progress.
+
+The Sound page lists active playback and recording devices, their default status, master volume and mute controls, and active app audio sessions with per-app volume, mute, and live level meters while the page is visible. It can save and restore per-app volume profiles locally; changing the Windows default device is not supported.
 
 The dashboard uses brand marks from Simple Icons where available, with sources and trademark notes in [assets/brand/README.md](assets/brand/README.md).
 

@@ -139,4 +139,37 @@
   <data name="Games.OwnedLocalProfileUnavailable" xml:space="preserve"><value>local Steam profile is inaccessible</value></data>
   <data name="Games.OwnedInvalidResponse" xml:space="preserve"><value>invalid Steam API response</value></data>
   <data name="Games.ProviderUnavailable" xml:space="preserve"><value>The launcher for this game is unavailable.</value></data>
+  <data name="Sound.Subtitle" xml:space="preserve"><value>Control Windows audio devices and individual app volumes.</value></data>
+  <data name="Sound.MixerTitle" xml:space="preserve"><value>Audio mixer</value></data>
+  <data name="Sound.MixerDescription" xml:space="preserve"><value>Manage playback and recording devices, app volumes, and saved mixes.</value></data>
+  <data name="Sound.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Sound.OutputDevices" xml:space="preserve"><value>Output devices</value></data>
+  <data name="Sound.InputDevices" xml:space="preserve"><value>Input devices</value></data>
+  <data name="Sound.DeviceVolume" xml:space="preserve"><value>Device volume</value></data>
+  <data name="Sound.DefaultDevice" xml:space="preserve"><value>DEFAULT</value></data>
+  <data name="Sound.DeviceActive" xml:space="preserve"><value>Active</value></data>
+  <data name="Sound.Mute" xml:space="preserve"><value>Mute</value></data>
+  <data name="Sound.NoOutputDevices" xml:space="preserve"><value>No active output devices found.</value></data>
+  <data name="Sound.NoInputDevices" xml:space="preserve"><value>No active input devices found.</value></data>
+  <data name="Sound.Profiles" xml:space="preserve"><value>Volume profiles</value></data>
+  <data name="Sound.ProfileName" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Sound.SaveProfile" xml:space="preserve"><value>Save current mix</value></data>
+  <data name="Sound.ApplyProfile" xml:space="preserve"><value>Apply</value></data>
+  <data name="Sound.DeleteProfile" xml:space="preserve"><value>Delete</value></data>
+  <data name="Sound.AppSessions" xml:space="preserve"><value>Apps currently playing audio</value></data>
+  <data name="Sound.AppVolume" xml:space="preserve"><value>Application volume</value></data>
+  <data name="Sound.AudioLevel" xml:space="preserve"><value>Audio level</value></data>
+  <data name="Sound.NoApps" xml:space="preserve"><value>No active audio sessions found.</value></data>
+  <data name="Sound.ActiveApps" xml:space="preserve"><value>{0} active app(s)</value></data>
+  <data name="Sound.Unavailable" xml:space="preserve"><value>Windows audio is currently unavailable.</value></data>
+  <data name="Sound.DeviceUnavailable" xml:space="preserve"><value>This audio device is no longer available.</value></data>
+  <data name="Sound.SessionEnded" xml:space="preserve"><value>This app's audio session has ended.</value></data>
+  <data name="Sound.ProfileNameInvalid" xml:space="preserve"><value>Enter a profile name of 1 to 40 characters.</value></data>
+  <data name="Sound.ProfileExists" xml:space="preserve"><value>A profile with that name already exists.</value></data>
+  <data name="Sound.ProfileSaved" xml:space="preserve"><value>Audio profile saved.</value></data>
+  <data name="Sound.ProfileSaveFailed" xml:space="preserve"><value>Could not save the audio profile.</value></data>
+  <data name="Sound.ProfileApplied" xml:space="preserve"><value>Applied {0} volume setting(s).</value></data>
+  <data name="Sound.ProfileDeleted" xml:space="preserve"><value>Audio profile deleted.</value></data>
+  <data name="Sound.ProfileNoMatches" xml:space="preserve"><value>No active devices or apps matched this profile.</value></data>
+  <data name="Sound.NoAudioToSave" xml:space="preserve"><value>No audio devices or app sessions are available to save.</value></data>
 </root>

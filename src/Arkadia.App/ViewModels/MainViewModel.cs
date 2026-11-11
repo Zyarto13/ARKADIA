@@ -16,6 +16,7 @@ using Arkadia.Core.Providers;
 using Arkadia.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NAudio.CoreAudioApi;
 using Serilog;
 
 namespace Arkadia.App.ViewModels;
@@ -37,8 +38,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly GitHubUpdateService _updateService;
     private readonly ThemeService _themeService;
     private readonly SynchronizationContext? _synchronizationContext;
+    private readonly WindowsAudioDeviceNotificationService _audioDeviceNotificationService = new();
     private readonly System.Threading.Timer _clockTimer;
     private readonly System.Threading.Timer _mediaSessionTimer;
+    private readonly System.Threading.Timer _audioMeterTimer;
     private readonly string _currentAppVersion;
     private string _gameSearchQuery = string.Empty;
     private string _selectedGameProvider = GameLibraryFilter.AllProviders;
@@ -63,6 +66,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _steamOwnedLibraryLoadFailed;
     private string? _steamOwnedLibraryFailureDetail;
     private int _isRefreshingMediaSession;
+    private int _isAudioRefreshQueued;
+    private int _isAudioDeviceRefreshQueued;
+    private int _isRefreshingAudioSessions;
+    private string _audioSessionsStatusText = string.Empty;
+    private string _audioDevicesStatusText = string.Empty;
+    private string _audioProfileNameInput = string.Empty;
+    private AudioVolumeProfile? _selectedAudioProfile;
     private bool _isUpdatingMusicVolume;
     private double _musicVolume;
     private bool _canAdjustMusicVolume;
@@ -126,9 +136,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         FilteredGames = [];
         Achievements = [];
         Shortcuts = [];
+        AudioSessions = [];
+        AudioOutputDevices = [];
+        AudioInputDevices = [];
+        AudioProfiles = [];
 
         SelectPage("Home");
         LocalizationManager.Instance.PropertyChanged += LocalizationChanged;
+        _audioDeviceNotificationService.DevicesChanged += AudioDevicesChanged;
         UpdateLocalizedProperties();
         UpdateClock();
         _clockTimer = new System.Threading.Timer(
@@ -147,6 +162,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
             null,
             TimeSpan.FromSeconds(2),
             TimeSpan.FromSeconds(5));
+        _audioMeterTimer = new System.Threading.Timer(
+            _ =>
+            {
+                if (!IsSound
+                    || Volatile.Read(ref _isRefreshingAudioSessions) != 0
+                    || Interlocked.Exchange(ref _isAudioRefreshQueued, 1) != 0
+                    || _synchronizationContext is null)
+                {
+                    Volatile.Write(ref _isAudioRefreshQueued, 0);
+                    return;
+                }
+
+                _synchronizationContext.Post(
+                    static state =>
+                    {
+                        var viewModel = (MainViewModel)state!;
+                        try
+                        {
+                            if (viewModel.IsSound)
+                            {
+                                viewModel.QueueAudioSessionRefresh();
+                            }
+                        }
+                        finally
+                        {
+                            Volatile.Write(ref viewModel._isAudioRefreshQueued, 0);
+                        }
+                    },
+                    this);
+            },
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
     }
 
     public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
@@ -155,12 +203,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<GameEntry> FilteredGames { get; }
     public ObservableCollection<GameAchievement> Achievements { get; }
     public ObservableCollection<AppShortcut> Shortcuts { get; }
+    public ObservableCollection<AudioSessionViewModel> AudioSessions { get; }
+    public ObservableCollection<AudioDeviceViewModel> AudioOutputDevices { get; }
+    public ObservableCollection<AudioDeviceViewModel> AudioInputDevices { get; }
+    public ObservableCollection<AudioVolumeProfile> AudioProfiles { get; }
     public bool IsHome => _currentPageKey == "Home";
     public bool IsGames => _currentPageKey == "Games";
     public bool IsAchievements => _currentPageKey == "Achievements";
+    public bool IsSound => _currentPageKey == "Sound";
     public bool IsShortcuts => _currentPageKey == "Shortcuts";
     public bool IsSettings => _currentPageKey == "Settings";
-    public bool IsComingSoon => !IsHome && !IsGames && !IsAchievements && !IsShortcuts && !IsSettings;
+    public bool IsComingSoon => !IsHome && !IsGames && !IsAchievements && !IsSound && !IsShortcuts && !IsSettings;
     public bool HasGames => Games.Count > 0;
     public bool HasFilteredGames => FilteredGames.Count > 0;
     public bool IsGameSearchEmpty => HasGames && !HasFilteredGames && !IsSteamOwnedGamesUnavailable;
@@ -177,6 +230,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
         : LocalizationManager.Instance["Games.OwnedScanFailed"];
     public bool HasShortcuts => Shortcuts.Count > 0;
     public bool IsShortcutsEmpty => Shortcuts.Count == 0;
+    public bool HasAudioSessions => AudioSessions.Count > 0;
+    public bool HasAudioOutputDevices => AudioOutputDevices.Count > 0;
+    public bool HasAudioInputDevices => AudioInputDevices.Count > 0;
+    public bool HasAudioProfiles => AudioProfiles.Count > 0;
+    public bool CanApplyAudioProfile => SelectedAudioProfile is not null;
+    public string AudioSessionsStatusText
+    {
+        get => _audioSessionsStatusText;
+        private set => SetProperty(ref _audioSessionsStatusText, value);
+    }
+    public string AudioDevicesStatusText
+    {
+        get => _audioDevicesStatusText;
+        private set => SetProperty(ref _audioDevicesStatusText, value);
+    }
+
+    public string AudioProfileNameInput
+    {
+        get => _audioProfileNameInput;
+        set => SetProperty(ref _audioProfileNameInput, value);
+    }
+
+    public AudioVolumeProfile? SelectedAudioProfile
+    {
+        get => _selectedAudioProfile;
+        set
+        {
+            if (SetProperty(ref _selectedAudioProfile, value))
+            {
+                OnPropertyChanged(nameof(CanApplyAudioProfile));
+            }
+        }
+    }
     public IEnumerable<GameEntry> SteamGames => Games.Where(game => game.ProviderId == "steam");
     public bool HasAchievements => Achievements.Count > 0;
     public int UnlockedAchievementCount => Achievements.Count(achievement => achievement.IsUnlocked);
@@ -193,6 +279,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             "Home" => "Home.Subtitle",
             "Games" => "Games.Subtitle",
             "Achievements" => "Achievements.Subtitle",
+            "Sound" => "Sound.Subtitle",
             "Shortcuts" => "Shortcuts.Subtitle",
             _ => "Home.Empty"
         }];
@@ -565,12 +652,439 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsHome));
         OnPropertyChanged(nameof(IsGames));
         OnPropertyChanged(nameof(IsAchievements));
+        OnPropertyChanged(nameof(IsSound));
         OnPropertyChanged(nameof(IsShortcuts));
         OnPropertyChanged(nameof(IsSettings));
         OnPropertyChanged(nameof(IsComingSoon));
         OnPropertyChanged(nameof(CurrentPageTitle));
         OnPropertyChanged(nameof(CurrentPageSubtitle));
         LaunchMessage = string.Empty;
+        if (IsSound)
+        {
+            try
+            {
+                _audioDeviceNotificationService.Start();
+            }
+            catch (COMException exception)
+            {
+                Log.Warning(exception, "Could not subscribe to Windows audio device changes.");
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+            }
+            catch (Win32Exception exception)
+            {
+                Log.Warning(exception, "Could not subscribe to Windows audio device changes.");
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+            }
+
+            RefreshAudioMixer();
+            _audioMeterTimer.Change(TimeSpan.FromMilliseconds(33), TimeSpan.FromMilliseconds(33));
+        }
+        else
+        {
+            _audioMeterTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            StopAudioDeviceNotifications();
+        }
+    }
+
+    private async Task RefreshAudioSessionsAsync()
+    {
+        if (Interlocked.Exchange(ref _isRefreshingAudioSessions, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshots = await Task.Run(WindowsAudioSessionService.GetActiveSessions);
+            if (!IsSound)
+            {
+                return;
+            }
+
+            var existingSessions = AudioSessions.ToDictionary(session => session.Id, StringComparer.Ordinal);
+            foreach (var snapshot in snapshots)
+            {
+                if (existingSessions.Remove(snapshot.Id, out var existing))
+                {
+                    existing.ApplySnapshot(snapshot);
+                }
+                else
+                {
+                    AudioSessions.Add(new AudioSessionViewModel(
+                        snapshot,
+                        SetAudioSessionVolume,
+                        SetAudioSessionMuted));
+                }
+            }
+
+            foreach (var staleSession in existingSessions.Values)
+            {
+                AudioSessions.Remove(staleSession);
+            }
+
+            OnPropertyChanged(nameof(HasAudioSessions));
+            AudioSessionsStatusText = snapshots.Count == 0
+                ? LocalizationManager.Instance["Sound.NoApps"]
+                : string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Sound.ActiveApps"],
+                    snapshots.Count);
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not enumerate Windows audio sessions.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access Windows audio sessions.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        finally
+        {
+            Volatile.Write(ref _isRefreshingAudioSessions, 0);
+        }
+    }
+
+    private void QueueAudioSessionRefresh() => _ = RefreshAudioSessionsAsync();
+
+    private void AudioDevicesChanged(object? sender, EventArgs e)
+    {
+        if (Interlocked.Exchange(ref _isAudioDeviceRefreshQueued, 1) != 0
+            || _synchronizationContext is null)
+        {
+            Volatile.Write(ref _isAudioDeviceRefreshQueued, 0);
+            return;
+        }
+
+        _synchronizationContext.Post(
+            static state =>
+            {
+                var viewModel = (MainViewModel)state!;
+                try
+                {
+                    if (viewModel.IsSound)
+                    {
+                        viewModel.RefreshAudioDevices();
+                    }
+                }
+                finally
+                {
+                    Volatile.Write(ref viewModel._isAudioDeviceRefreshQueued, 0);
+                }
+            },
+            this);
+    }
+
+    private void StopAudioDeviceNotifications()
+    {
+        try
+        {
+            _audioDeviceNotificationService.Stop();
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not unsubscribe from Windows audio device changes.");
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not release the Windows audio device notification service.");
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshAudioMixer()
+    {
+        RefreshAudioDevices();
+        _ = RefreshAudioSessionsAsync();
+    }
+
+    private void RefreshAudioDevices()
+    {
+        try
+        {
+            UpdateAudioDeviceCollection(
+                AudioOutputDevices,
+                WindowsAudioSessionService.GetDevices(DataFlow.Render));
+            UpdateAudioDeviceCollection(
+                AudioInputDevices,
+                WindowsAudioSessionService.GetDevices(DataFlow.Capture));
+            OnPropertyChanged(nameof(HasAudioOutputDevices));
+            OnPropertyChanged(nameof(HasAudioInputDevices));
+            AudioDevicesStatusText = string.Empty;
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not enumerate Windows audio devices.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access Windows audio devices.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+    }
+
+    private void UpdateAudioDeviceCollection(
+        ObservableCollection<AudioDeviceViewModel> collection,
+        IReadOnlyList<AudioDeviceSnapshot> snapshots)
+    {
+        var existingDevices = collection.ToDictionary(device => device.Id, StringComparer.OrdinalIgnoreCase);
+        foreach (var snapshot in snapshots)
+        {
+            if (existingDevices.Remove(snapshot.Id, out var existing))
+            {
+                existing.ApplySnapshot(snapshot);
+            }
+            else
+            {
+                collection.Add(new AudioDeviceViewModel(
+                    snapshot,
+                    SetAudioDeviceVolume,
+                    SetAudioDeviceMuted));
+            }
+        }
+
+        foreach (var staleDevice in existingDevices.Values)
+        {
+            collection.Remove(staleDevice);
+        }
+    }
+
+    private void SetAudioDeviceVolume(AudioDeviceViewModel device)
+    {
+        try
+        {
+            var flow = device.IsInput ? DataFlow.Capture : DataFlow.Render;
+            if (!WindowsAudioSessionService.TrySetDeviceVolume(device.Id, flow, device.VolumePercent / 100f))
+            {
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.DeviceUnavailable"];
+            }
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not change the volume of a Windows audio device.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access a Windows audio device.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+    }
+
+    private void SetAudioDeviceMuted(AudioDeviceViewModel device)
+    {
+        try
+        {
+            var flow = device.IsInput ? DataFlow.Capture : DataFlow.Render;
+            if (!WindowsAudioSessionService.TrySetDeviceMuted(device.Id, flow, device.IsMuted))
+            {
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.DeviceUnavailable"];
+            }
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not change the mute state of a Windows audio device.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access a Windows audio device.");
+            AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+    }
+
+    private void SetAudioSessionVolume(AudioSessionViewModel audioSession)
+    {
+        try
+        {
+            if (!WindowsAudioSessionService.TrySetSessionVolume(
+                    audioSession.Id,
+                    audioSession.VolumePercent / 100f))
+            {
+                AudioSessionsStatusText = LocalizationManager.Instance["Sound.SessionEnded"];
+            }
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not change the volume of a Windows audio session.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access a Windows audio session.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+    }
+
+    private void SetAudioSessionMuted(AudioSessionViewModel audioSession)
+    {
+        try
+        {
+            if (!WindowsAudioSessionService.TrySetSessionMuted(audioSession.Id, audioSession.IsMuted))
+            {
+                AudioSessionsStatusText = LocalizationManager.Instance["Sound.SessionEnded"];
+            }
+        }
+        catch (COMException exception)
+        {
+            Log.Warning(exception, "Could not change the mute state of a Windows audio session.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not access a Windows audio session.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveAudioProfileAsync(CancellationToken cancellationToken)
+    {
+        var name = AudioProfileNameInput.Trim();
+        if (name.Length is 0 or > 40)
+        {
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileNameInvalid"];
+            return;
+        }
+
+        if (AudioProfiles.Any(profile => string.Equals(profile.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileExists"];
+            return;
+        }
+
+        var savedSessions = AudioSessions
+            .Where(session => !string.IsNullOrWhiteSpace(session.ProcessName))
+            .GroupBy(session => session.ProcessName, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Select(session => new AudioVolumeSetting(
+                session.ProcessName,
+                session.VolumePercent / 100f,
+                session.IsMuted))
+            .ToArray();
+        var savedDevices = AudioOutputDevices
+            .Concat(AudioInputDevices)
+            .Select(device => new AudioDeviceVolumeSetting(
+                device.Id,
+                device.IsInput,
+                device.VolumePercent / 100f,
+                device.IsMuted))
+            .ToArray();
+        if (savedSessions.Length == 0 && savedDevices.Length == 0)
+        {
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.NoAudioToSave"];
+            return;
+        }
+
+        var profile = new AudioVolumeProfile(name, savedSessions, savedDevices);
+        AudioProfiles.Add(profile);
+        SelectedAudioProfile = profile;
+        try
+        {
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            AudioProfileNameInput = string.Empty;
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileSaved"];
+            OnPropertyChanged(nameof(HasAudioProfiles));
+        }
+        catch (IOException exception)
+        {
+            AudioProfiles.Remove(profile);
+            SelectedAudioProfile = null;
+            Log.Error(exception, "Could not save an audio profile.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileSaveFailed"];
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            AudioProfiles.Remove(profile);
+            SelectedAudioProfile = null;
+            Log.Error(exception, "Access was denied while saving an audio profile.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileSaveFailed"];
+        }
+    }
+
+    [RelayCommand]
+    private void ApplyAudioProfile()
+    {
+        var profile = SelectedAudioProfile;
+        if (profile is null)
+        {
+            return;
+        }
+
+        var settings = profile.Sessions.ToDictionary(
+            setting => setting.ProcessName,
+            StringComparer.OrdinalIgnoreCase);
+        var deviceSettings = (profile.Devices ?? [])
+            .ToDictionary(
+                setting => $"{setting.IsInput}\u001f{setting.DeviceId}",
+                StringComparer.OrdinalIgnoreCase);
+        var appliedCount = 0;
+        foreach (var device in AudioOutputDevices.Concat(AudioInputDevices))
+        {
+            var key = $"{device.IsInput}\u001f{device.Id}";
+            if (!deviceSettings.TryGetValue(key, out var setting))
+            {
+                continue;
+            }
+
+            device.VolumePercent = (int)Math.Round(setting.Volume * 100, MidpointRounding.AwayFromZero);
+            device.IsMuted = setting.IsMuted;
+            appliedCount++;
+        }
+
+        foreach (var session in AudioSessions)
+        {
+            if (!settings.TryGetValue(session.ProcessName, out var setting))
+            {
+                continue;
+            }
+
+            session.VolumePercent = (int)Math.Round(setting.Volume * 100, MidpointRounding.AwayFromZero);
+            session.IsMuted = setting.IsMuted;
+            appliedCount++;
+        }
+
+        AudioSessionsStatusText = appliedCount == 0
+            ? LocalizationManager.Instance["Sound.ProfileNoMatches"]
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationManager.Instance["Sound.ProfileApplied"],
+                appliedCount);
+    }
+
+    [RelayCommand]
+    private async Task DeleteAudioProfileAsync(CancellationToken cancellationToken)
+    {
+        var profile = SelectedAudioProfile;
+        if (profile is null)
+        {
+            return;
+        }
+
+        AudioProfiles.Remove(profile);
+        SelectedAudioProfile = null;
+        try
+        {
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileDeleted"];
+            OnPropertyChanged(nameof(HasAudioProfiles));
+        }
+        catch (IOException exception)
+        {
+            AudioProfiles.Add(profile);
+            SelectedAudioProfile = profile;
+            Log.Error(exception, "Could not delete an audio profile.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileSaveFailed"];
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            AudioProfiles.Add(profile);
+            SelectedAudioProfile = profile;
+            Log.Error(exception, "Access was denied while deleting an audio profile.");
+            AudioSessionsStatusText = LocalizationManager.Instance["Sound.ProfileSaveFailed"];
+        }
     }
 
     [RelayCommand]
@@ -694,6 +1208,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _runAtStartup = await _startupTaskService.IsEnabledAsync(cancellationToken);
         _startMinimized = settings.StartMinimized;
         _closeToTray = settings.CloseToTray;
+        foreach (var profile in settings.AudioProfiles ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(profile.Name)
+                && profile.Sessions is { } sessions)
+            {
+                AudioProfiles.Add(new AudioVolumeProfile(
+                    profile.Name,
+                    sessions.Where(session => !string.IsNullOrWhiteSpace(session.ProcessName))
+                        .Select(session => session with { Volume = Math.Clamp(session.Volume, 0f, 1f) })
+                        .ToArray(),
+                    (profile.Devices ?? [])
+                        .Select(device => device with { Volume = Math.Clamp(device.Volume, 0f, 1f) })
+                        .ToArray()));
+            }
+        }
+        SelectedAudioProfile = AudioProfiles.FirstOrDefault();
+        OnPropertyChanged(nameof(HasAudioProfiles));
         foreach (var shortcut in settings.Shortcuts ?? [])
         {
             if (IsValidShortcut(shortcut.Name, shortcut.Uri))
@@ -1195,7 +1726,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _clockTimer.Dispose();
         _mediaSessionTimer.Dispose();
+        _audioMeterTimer.Dispose();
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
+        _audioDeviceNotificationService.DevicesChanged -= AudioDevicesChanged;
+        StopAudioDeviceNotifications();
         GC.SuppressFinalize(this);
     }
 
@@ -1386,7 +1920,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StartMinimized,
         CloseToTray,
         MusicService: SelectedMusicService,
-        Shortcuts: Shortcuts.ToArray());
+        Shortcuts: Shortcuts.ToArray(),
+        AudioProfiles: AudioProfiles.ToArray());
 
     private static bool IsValidShortcut(string name, string uriText) =>
         !string.IsNullOrWhiteSpace(name)

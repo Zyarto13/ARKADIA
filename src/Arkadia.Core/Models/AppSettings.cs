@@ -10,7 +10,8 @@ public sealed record AppSettings(
     bool CloseToTray = true,
     bool SingleInstance = true,
     string MusicService = "Spotify",
-    IReadOnlyList<AppShortcut>? Shortcuts = null)
+    IReadOnlyList<AppShortcut>? Shortcuts = null,
+    IReadOnlyList<AudioVolumeProfile>? AudioProfiles = null)
 {
     public static AppSettings Default { get; } = new(
         "Blue",

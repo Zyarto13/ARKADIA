@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.11
+
+- Added a localized Windows audio mixer with input/output device volume and mute controls, active app volume and real-time meters, and saved per-app volume profiles.
+- Added live audio device change notifications and per-application icons in the mixer.
+- Added the project requirements document at [CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md).
+
 ## 1.0.10
 
 - Fixed Steam profile detection for current `loginusers.vdf` files that use account timestamps instead of the legacy `MostRecent` marker.

@@ -20,7 +20,14 @@ public sealed class JsonSettingsServiceTests
             CloseToTray: false,
             SingleInstance: false,
             MusicService: "Deezer",
-            Shortcuts: [new AppShortcut(Guid.Parse("6e55c49e-8aad-4e84-9d6d-11456311f3eb"), "Docs", "https://example.com")]);
+            Shortcuts: [new AppShortcut(Guid.Parse("6e55c49e-8aad-4e84-9d6d-11456311f3eb"), "Docs", "https://example.com")],
+            AudioProfiles:
+            [
+                new AudioVolumeProfile(
+                    "Night",
+                    [new AudioVolumeSetting("spotify", 0.25f, true)],
+                    [new AudioDeviceVolumeSetting("headphones-id", false, 0.6f, false)])
+            ]);
 
         try
         {
@@ -28,8 +35,20 @@ public sealed class JsonSettingsServiceTests
             await service.SaveAsync(settings, CancellationToken.None);
             var loaded = await service.LoadAsync(CancellationToken.None);
 
-            Assert.Equal(settings with { Shortcuts = null }, loaded with { Shortcuts = null });
+            Assert.Equal(
+                settings with { Shortcuts = null, AudioProfiles = null },
+                loaded with { Shortcuts = null, AudioProfiles = null });
             Assert.Equal(settings.Shortcuts, loaded.Shortcuts);
+            Assert.Collection(
+                loaded.AudioProfiles!,
+                profile =>
+                {
+                    Assert.Equal("Night", profile.Name);
+                    Assert.Equal([new AudioVolumeSetting("spotify", 0.25f, true)], profile.Sessions);
+                    Assert.Equal(
+                        [new AudioDeviceVolumeSetting("headphones-id", false, 0.6f, false)],
+                        profile.Devices);
+                });
         }
 
         finally
