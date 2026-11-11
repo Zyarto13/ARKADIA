@@ -9,6 +9,29 @@ public static class GameLibraryFilter
     public const string InstalledGames = "installed";
     public const string OwnedGames = "owned";
 
+    public static IEnumerable<GameEntry> MergeDuplicates(IEnumerable<GameEntry> games)
+    {
+        ArgumentNullException.ThrowIfNull(games);
+
+        return games
+            .GroupBy(
+                game => $"{game.ProviderId}:{game.ExternalId}",
+                StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var preferred = group.FirstOrDefault(game => game.IsInstalled) ?? group.First();
+                return preferred with
+                {
+                    IsInstalled = group.Any(game => game.IsInstalled),
+                    IsOwned = group.Any(game => game.IsOwned),
+                    PlaytimeMinutes = group.Max(game => game.PlaytimeMinutes),
+                    ArtworkFilePath = group
+                        .Select(game => game.ArtworkFilePath)
+                        .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path))
+                };
+            });
+    }
+
     public static IEnumerable<GameEntry> Filter(
         IEnumerable<GameEntry> games,
         string? searchText,

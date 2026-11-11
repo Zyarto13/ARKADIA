@@ -175,7 +175,7 @@ public sealed class GameProviderTests
                 Assert.Null(game.InstallPath);
             });
             Assert.Equal(125, games[0].PlaytimeMinutes);
-            Assert.Null(games[1].PlaytimeMinutes);
+            Assert.Equal(0, games[1].PlaytimeMinutes);
             Assert.Contains("steamid=76561197960265729", handler.LastRequestUri!.Query);
         }
         finally

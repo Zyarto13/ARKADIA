@@ -84,6 +84,76 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <Style x:Key="MusicVolumeSliderStyle" TargetType="Slider">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="IsMoveToPointEnabled" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Slider">
+                            <Grid Height="24">
+                                <Border Height="4"
+                                        Background="#408CA7C3"
+                                        CornerRadius="2"
+                                        VerticalAlignment="Center" />
+                                <Track x:Name="PART_Track"
+                                       IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
+                                       Minimum="{TemplateBinding Minimum}"
+                                       Maximum="{TemplateBinding Maximum}"
+                                       Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="{x:Static Slider.DecreaseLarge}"
+                                                      Focusable="False">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="RepeatButton">
+                                                    <Border Height="4"
+                                                            Background="{DynamicResource AccentBrush}"
+                                                            CornerRadius="2"
+                                                            VerticalAlignment="Center" />
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Width="16" Height="16" Focusable="False">
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Grid>
+                                                        <Ellipse Fill="#558CA7C3" />
+                                                        <Ellipse x:Name="ThumbCore"
+                                                                 Width="10"
+                                                                 Height="10"
+                                                                 Fill="{DynamicResource AccentBrush}"
+                                                                 Stroke="#F0FFFFFF"
+                                                                 StrokeThickness="1.5"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="ThumbCore" Property="Width" Value="12" />
+                                                            <Setter TargetName="ThumbCore" Property="Height" Value="12" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="{x:Static Slider.IncreaseLarge}"
+                                                      Focusable="False">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="RepeatButton">
+                                                    <Border Background="Transparent" />
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <Style x:Key="SurfaceButtonStyle" TargetType="Button">
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="Background" Value="#18FFFFFF" />

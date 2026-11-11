@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using Arkadia.App.Icons;
 using Arkadia.App.Localization;
@@ -37,7 +38,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly System.Threading.Timer _clockTimer;
-    private readonly System.Threading.Timer _musicVolumeTimer;
+    private readonly System.Threading.Timer _mediaSessionTimer;
     private readonly string _currentAppVersion;
     private string _gameSearchQuery = string.Empty;
     private string _selectedGameProvider = GameLibraryFilter.AllProviders;
@@ -60,9 +61,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private int _failedGameProviders;
     private bool _sortGamesByPlaytime;
     private bool _steamOwnedLibraryLoadFailed;
+    private int _isRefreshingMediaSession;
     private bool _isUpdatingMusicVolume;
     private double _musicVolume;
     private bool _canAdjustMusicVolume;
+    private string _currentTrackTitle = string.Empty;
+    private string _currentTrackArtist = string.Empty;
+    private BitmapImage? _currentTrackArtwork;
     private string _steamApiKey = string.Empty;
     private string _achievementsStatusText = string.Empty;
     private GameEntry? _selectedAchievementGame;
@@ -129,9 +134,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             null,
             TimeSpan.FromSeconds(1),
             TimeSpan.FromMinutes(1));
-        _musicVolumeTimer = new System.Threading.Timer(
+        _mediaSessionTimer = new System.Threading.Timer(
             _ => _synchronizationContext?.Post(
-                static state => ((MainViewModel)state!).RefreshMusicVolume(),
+                static state =>
+                {
+                    var viewModel = (MainViewModel)state!;
+                    viewModel.RefreshMusicState();
+                },
                 this),
             null,
             TimeSpan.FromSeconds(2),
@@ -365,12 +374,44 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
     public string ClockText { get; private set; } = string.Empty;
+    public string CurrentTrackTitle
+    {
+        get => _currentTrackTitle;
+        private set
+        {
+            if (SetProperty(ref _currentTrackTitle, value))
+            {
+                OnPropertyChanged(nameof(HasCurrentTrack));
+            }
+        }
+    }
+
+    public string CurrentTrackArtist
+    {
+        get => _currentTrackArtist;
+        private set => SetProperty(ref _currentTrackArtist, value);
+    }
+
+    public BitmapImage? CurrentTrackArtwork
+    {
+        get => _currentTrackArtwork;
+        private set => SetProperty(ref _currentTrackArtwork, value);
+    }
+
+    public bool HasCurrentTrack => !string.IsNullOrWhiteSpace(CurrentTrackTitle);
+
     public double MusicVolume
     {
         get => _musicVolume;
         set
         {
-            if (!SetProperty(ref _musicVolume, Math.Clamp(value, 0d, 1d)) || _isUpdatingMusicVolume)
+            if (!SetProperty(ref _musicVolume, Math.Clamp(value, 0d, 1d)))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(MusicVolumePercent));
+            if (_isUpdatingMusicVolume)
             {
                 return;
             }
@@ -392,6 +433,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 Log.Warning(exception, "Could not access the audio session for {MusicService}.", SelectedMusicService);
             }
         }
+    }
+
+    public int MusicVolumePercent
+    {
+        get => (int)Math.Round(_musicVolume * 100, MidpointRounding.AwayFromZero);
+        set => MusicVolume = Math.Clamp(value, 0, 100) / 100d;
     }
 
     public bool CanAdjustMusicVolume
@@ -652,6 +699,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ?? "Spotify";
         ApplySelectedMusicService();
         RefreshMusicVolume();
+        await RefreshMusicSessionAsync();
         try
         {
             SteamApiKey = _steamApiKeyStore.Load() ?? string.Empty;
@@ -911,10 +959,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             var uniqueGames = discoveredGames
                 .Concat(ownedGames)
-                .DistinctBy(game => $"{game.ProviderId}:{game.ExternalId}", StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var mergedGames = GameLibraryFilter.MergeDuplicates(uniqueGames).ToArray();
             Games.Clear();
-            foreach (var game in OrderGames(uniqueGames))
+            foreach (var game in OrderGames(mergedGames))
             {
                 Games.Add(game);
             }
@@ -922,7 +970,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _failedGameProviders = failedProviders;
             _hasScannedGames = true;
             OnPropertyChanged(nameof(SteamGames));
-            if (SelectedAchievementGame is null || !uniqueGames.Any(game => game == SelectedAchievementGame))
+            if (SelectedAchievementGame is null || !mergedGames.Any(game => game == SelectedAchievementGame))
             {
                 SelectedAchievementGame = Games.FirstOrDefault(game => game.ProviderId == "steam");
             }
@@ -1043,10 +1091,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         catch (HttpRequestException exception)
         {
             Log.Warning(
-                "Steam achievement request failed for {GameId} with HTTP error category {ErrorCategory}.",
+                "Steam achievement request failed for {GameId} with HTTP status {StatusCode} and error category {ErrorCategory}.",
                 selectedGame.ExternalId,
+                exception.StatusCode,
                 exception.HttpRequestError);
-            AchievementsStatusText = LocalizationManager.Instance["Achievements.RequestFailed"];
+            AchievementsStatusText = exception.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden =>
+                    LocalizationManager.Instance["Achievements.AccessDenied"],
+                System.Net.HttpStatusCode.NotFound =>
+                    LocalizationManager.Instance["Achievements.GameUnavailable"],
+                _ => LocalizationManager.Instance["Achievements.RequestFailed"]
+            };
         }
         catch (IOException exception)
         {
@@ -1112,9 +1168,62 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _clockTimer.Dispose();
-        _musicVolumeTimer.Dispose();
+        _mediaSessionTimer.Dispose();
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
         GC.SuppressFinalize(this);
+    }
+
+    private async Task RefreshMusicSessionAsync()
+    {
+        if (Interlocked.Exchange(ref _isRefreshingMediaSession, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshot = await WindowsMediaSessionService.GetCurrentSessionAsync(CancellationToken.None);
+            CurrentTrackTitle = snapshot?.Title ?? string.Empty;
+            CurrentTrackArtist = snapshot?.Artist ?? string.Empty;
+            CurrentTrackArtwork = snapshot?.Artwork;
+        }
+        catch (COMException exception)
+        {
+            ClearCurrentTrack();
+            Log.Debug(exception, "Could not read the current Windows media session.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            ClearCurrentTrack();
+            Log.Debug(exception, "The current Windows media session is unavailable.");
+        }
+        catch (IOException exception)
+        {
+            ClearCurrentTrack();
+            Log.Debug(exception, "Could not read the current media thumbnail.");
+        }
+        catch (System.IO.FileFormatException exception)
+        {
+            ClearCurrentTrack();
+            Log.Debug(exception, "The current media thumbnail has an unsupported format.");
+        }
+        finally
+        {
+            Volatile.Write(ref _isRefreshingMediaSession, 0);
+        }
+    }
+
+    private void ClearCurrentTrack()
+    {
+        CurrentTrackTitle = string.Empty;
+        CurrentTrackArtist = string.Empty;
+        CurrentTrackArtwork = null;
+    }
+
+    private void RefreshMusicState()
+    {
+        _ = RefreshMusicSessionAsync();
+        RefreshMusicVolume();
     }
 
     private void RefreshMusicVolume()

@@ -46,11 +46,18 @@ public sealed partial class SteamAchievementService : IGameAchievementService
 
         using var schemaDocument = await GetJsonAsync(schemaUri, cancellationToken);
         if (!schemaDocument.RootElement.TryGetProperty("game", out var schemaGame)
+            || schemaGame.ValueKind != JsonValueKind.Object
             || !schemaGame.TryGetProperty("availableGameStats", out var availableStats)
-            || !availableStats.TryGetProperty("achievements", out var schemaAchievements)
-            || schemaAchievements.ValueKind != JsonValueKind.Array)
+            || availableStats.ValueKind != JsonValueKind.Object
+            || !availableStats.TryGetProperty("achievements", out var schemaAchievements))
         {
-            return [];
+            throw new InvalidOperationException(
+                "Steam did not expose an achievement schema for this game.");
+        }
+
+        if (schemaAchievements.ValueKind != JsonValueKind.Array)
+        {
+            throw new JsonException("Steam returned an invalid achievement schema.");
         }
 
         var playerUri = new UriBuilder("https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/")

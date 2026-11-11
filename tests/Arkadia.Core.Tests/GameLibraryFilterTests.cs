@@ -75,6 +75,20 @@ public sealed class GameLibraryFilterTests
     }
 
     [Fact]
+    public void MergeDuplicatesPreservesInstalledMetadataAndOwnedPlaytime()
+    {
+        var installed = new GameEntry("steam", "123", "Space Quest", "C:\\Games\\Space Quest", true, true);
+        var owned = new GameEntry("STEAM", "123", "Space Quest", null, false, true, 420);
+
+        var merged = Assert.Single(GameLibraryFilter.MergeDuplicates([installed, owned]));
+
+        Assert.True(merged.IsInstalled);
+        Assert.True(merged.IsOwned);
+        Assert.Equal("C:\\Games\\Space Quest", merged.InstallPath);
+        Assert.Equal(420, merged.PlaytimeMinutes);
+    }
+
+    [Fact]
     public void SteamGamesExposePrimaryAndFallbackArtworkUris()
     {
         var game = new GameEntry("steam", "1234", "Space Quest", null, true, true);

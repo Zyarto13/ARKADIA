@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Arkadia.Core.Models;
 using Arkadia.App.Services;
 using Arkadia.App.ViewModels;
@@ -105,6 +106,81 @@ public partial class MainWindow : Window
             viewModel.SteamApiKey = passwordBox.Password;
         }
     }
+
+    private void MusicVolumePercent_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        var proposedText = textBox.Text
+            .Remove(textBox.SelectionStart, textBox.SelectionLength)
+            .Insert(textBox.SelectionStart, e.Text);
+        e.Handled = !IsValidVolumeEntry(proposedText);
+    }
+
+    private void MusicVolumePercent_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox
+            || !e.SourceDataObject.GetDataPresent(System.Windows.DataFormats.UnicodeText, true)
+            || e.SourceDataObject.GetData(System.Windows.DataFormats.UnicodeText) is not string pastedText)
+        {
+            e.CancelCommand();
+            return;
+        }
+
+        var proposedText = textBox.Text
+            .Remove(textBox.SelectionStart, textBox.SelectionLength)
+            .Insert(textBox.SelectionStart, pastedText);
+        if (!IsValidVolumeEntry(proposedText))
+        {
+            e.CancelCommand();
+        }
+    }
+
+    private void MusicVolumePercent_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox || DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        ApplyMusicVolumePercent(textBox, viewModel);
+    }
+
+    private void MusicVolumePercent_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter
+            || sender is not System.Windows.Controls.TextBox textBox
+            || DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        ApplyMusicVolumePercent(textBox, viewModel);
+        Keyboard.ClearFocus();
+        e.Handled = true;
+    }
+
+    private static void ApplyMusicVolumePercent(
+        System.Windows.Controls.TextBox textBox,
+        MainViewModel viewModel)
+    {
+        if (int.TryParse(textBox.Text, out var percent))
+        {
+            viewModel.MusicVolumePercent = percent;
+        }
+
+        textBox.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty)?.UpdateTarget();
+    }
+
+    private static bool IsValidVolumeEntry(string text) =>
+        text.Length == 0
+        || text.All(character => character is >= '0' and <= '9')
+        && int.TryParse(text, out var percent)
+        && percent <= 100;
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {

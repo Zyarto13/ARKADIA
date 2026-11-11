@@ -31,6 +31,7 @@
   <data name="Achievements.Unlocked" xml:space="preserve"><value>Débloqué</value></data>
   <data name="Achievements.Locked" xml:space="preserve"><value>À débloquer</value></data>
   <data name="Achievements.KeyRequired" xml:space="preserve"><value>Ajoutez votre clé Steam Web API dans Paramètres pour charger les succès.</value></data>
+  <data name="Achievements.AccessDenied" xml:space="preserve"><value>Steam a refusé la demande. Vérifiez la clé API et « Détails du jeu » dans la confidentialité Steam : ce réglage est distinct du profil public.</value></data>
   <data name="Achievements.KeySaved" xml:space="preserve"><value>Clé Steam enregistrée de manière chiffrée pour ce compte Windows.</value></data>
   <data name="Achievements.KeyRemoved" xml:space="preserve"><value>Clé Steam supprimée.</value></data>
   <data name="Achievements.KeySaveFailed" xml:space="preserve"><value>Impossible d’enregistrer la clé Steam. Vérifiez les permissions du dossier de données de l’application.</value></data>
@@ -39,7 +40,7 @@
   <data name="Achievements.RequestFailed" xml:space="preserve"><value>Impossible de joindre Steam. Vérifiez la connexion et réessayez.</value></data>
   <data name="Achievements.ProfileUnavailable" xml:space="preserve"><value>Le profil Steam local récent est introuvable. Connectez-vous à Steam puis relancez ARKADIA.</value></data>
   <data name="Achievements.InvalidResponse" xml:space="preserve"><value>Steam a renvoyé une réponse de succès invalide.</value></data>
-  <data name="Achievements.GameUnavailable" xml:space="preserve"><value>Steam ne fournit pas de succès pour ce jeu. Vérifiez aussi que « Détails du jeu » est public dans les paramètres de confidentialité Steam.</value></data>
+  <data name="Achievements.GameUnavailable" xml:space="preserve"><value>Steam ne communique pas les stats de ce jeu. Vérifiez « Détails du jeu » dans la confidentialité Steam : ce réglage est distinct du profil public. Certains jeux ne publient pas leurs succès.</value></data>
   <data name="Achievements.NoneFound" xml:space="preserve"><value>Aucun succès n’est publié par Steam pour ce jeu.</value></data>
   <data name="Home.Title" xml:space="preserve"><value>Accueil</value></data>
   <data name="Home.Subtitle" xml:space="preserve"><value>Tout ce dont vous avez besoin, au même endroit.</value></data>

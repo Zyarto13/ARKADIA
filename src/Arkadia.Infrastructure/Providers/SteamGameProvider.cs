@@ -171,8 +171,8 @@ public sealed partial class SteamGameProvider : IGameProvider, ISteamOwnedGamePr
                 null,
                 false,
                 true,
-                game.Playtime is > 0
-                    ? (int)Math.Min(game.Playtime.Value, (uint)int.MaxValue)
+                game.Playtime is uint playtimeMinutes
+                    ? (int)Math.Min(playtimeMinutes, (uint)int.MaxValue)
                     : null))
             .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();

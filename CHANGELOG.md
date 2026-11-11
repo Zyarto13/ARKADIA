@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.8
+
+- Fixed Steam library merging so Steam API playtime is retained for installed games and zero-playtime games display correctly.
+- Added clearer Steam achievement access errors, including the distinction between profile visibility and Game Details privacy.
+- Added a redesigned music volume control with direct 0-100 numeric entry.
+- Restored active Windows media-session title, artist, and artwork on the Deezer tile using the .NET 10 SDK's stable Windows SDK references.
+
 ## 1.0.7
 
 - Added a Steam-owned-games collection alongside installed games, with public Steam library lookup using the configured Web API key.
@@ -7,8 +14,6 @@
 - Added an optional per-app volume slider for music services when Windows exposes a matching audio session; the Deezer shortcut opens liked tracks when no dedicated Deezer account integration is configured.
 - Added an original ARKADIA inverted-V brand mark as the Windows application icon.
 - Limited Discord to launcher behavior; call controls and participant lists are not available through the supported Discord presence interface.
-
-## Unreleased
 
 ## 1.0.6
 
