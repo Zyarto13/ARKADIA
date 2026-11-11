@@ -1,0 +1,15 @@
+.vs/
+.idea/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.env
+secrets.bin
+*.pfx
+*.p12
+publish/
+artifacts/
+dist/

@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF74778E" Offset="0" />
+        <GradientStop Color="#FF454B9D" Offset="0.62" />
+        <GradientStop Color="#FF3036A3" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#B42F376A" />
+    <SolidColorBrush x:Key="CardHoverBrush" Color="#D23C4A87" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#3EFFFFFF" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF6F7FF" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#C7D0F0" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF84A9FF" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#FF68E0B2" />
+</ResourceDictionary>

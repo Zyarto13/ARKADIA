@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="App.Name" xml:space="preserve"><value>ARKADIA</value></data>
+  <data name="Navigation.Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Navigation.Games" xml:space="preserve"><value>Games</value></data>
+  <data name="Navigation.Achievements" xml:space="preserve"><value>Achievements</value></data>
+  <data name="Navigation.Sounds" xml:space="preserve"><value>Sound</value></data>
+  <data name="Navigation.Shortcuts" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="Navigation.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Shortcuts.Subtitle" xml:space="preserve"><value>Keep your favorite websites and apps one click away.</value></data>
+  <data name="Shortcuts.Help" xml:space="preserve"><value>Add an HTTPS website or a supported app link (Steam, Spotify, Discord, Epic Games).</value></data>
+  <data name="Shortcuts.Name" xml:space="preserve"><value>Shortcut name</value></data>
+  <data name="Shortcuts.Address" xml:space="preserve"><value>HTTPS address or app link</value></data>
+  <data name="Shortcuts.Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Shortcuts.Remove" xml:space="preserve"><value>Remove shortcut</value></data>
+  <data name="Shortcuts.Empty" xml:space="preserve"><value>No shortcuts yet. Add a website or app above.</value></data>
+  <data name="Shortcuts.Invalid" xml:space="preserve"><value>Enter a name (up to 50 characters) and an HTTPS address or an allowed app link.</value></data>
+  <data name="Shortcuts.Duplicate" xml:space="preserve"><value>A shortcut with that name already exists.</value></data>
+  <data name="Shortcuts.Limit" xml:space="preserve"><value>You have reached the 30-shortcut limit.</value></data>
+  <data name="Shortcuts.Added" xml:space="preserve"><value>Shortcut added.</value></data>
+  <data name="Shortcuts.Removed" xml:space="preserve"><value>Shortcut removed.</value></data>
+  <data name="Shortcuts.SaveFailed" xml:space="preserve"><value>Could not save shortcuts. Check access to the application data folder.</value></data>
+  <data name="Achievements.Subtitle" xml:space="preserve"><value>View achievements for Steam games installed on this PC.</value></data>
+  <data name="Achievements.Load" xml:space="preserve"><value>Load achievements</value></data>
+  <data name="Achievements.SelectGame" xml:space="preserve"><value>Select a Steam game</value></data>
+  <data name="Achievements.UnsupportedProvider" xml:space="preserve"><value>Achievements are currently available for Steam games only.</value></data>
+  <data name="Achievements.Unlocked" xml:space="preserve"><value>Unlocked</value></data>
+  <data name="Achievements.Locked" xml:space="preserve"><value>Locked</value></data>
+  <data name="Achievements.KeyRequired" xml:space="preserve"><value>Add your Steam Web API key in Settings to load achievements.</value></data>
+  <data name="Achievements.KeySaved" xml:space="preserve"><value>Steam key saved encrypted for this Windows account.</value></data>
+  <data name="Achievements.KeyRemoved" xml:space="preserve"><value>Steam key removed.</value></data>
+  <data name="Achievements.KeySaveFailed" xml:space="preserve"><value>Could not save the Steam key. Check access to the application data folder.</value></data>
+  <data name="Achievements.KeyUnreadable" xml:space="preserve"><value>The saved Steam key could not be decrypted. Enter it again in Settings.</value></data>
+  <data name="Achievements.Loaded" xml:space="preserve"><value>{0} of {1} achievements unlocked.</value></data>
+  <data name="Achievements.RequestFailed" xml:space="preserve"><value>Could not reach Steam. Check your connection and try again.</value></data>
+  <data name="Achievements.ProfileUnavailable" xml:space="preserve"><value>The recent local Steam profile could not be found. Sign in to Steam and restart ARKADIA.</value></data>
+  <data name="Achievements.InvalidResponse" xml:space="preserve"><value>Steam returned invalid achievement data.</value></data>
+  <data name="Achievements.GameUnavailable" xml:space="preserve"><value>Steam does not provide achievements for this game. Also check that Game details are public in Steam privacy settings.</value></data>
+  <data name="Achievements.NoneFound" xml:space="preserve"><value>Steam does not publish achievements for this game.</value></data>
+  <data name="Home.Title" xml:space="preserve"><value>Home</value></data>
+  <data name="Home.Subtitle" xml:space="preserve"><value>Everything you need, gathered in one place.</value></data>
+  <data name="Home.ShortcutsHint" xml:space="preserve"><value>CTRL 1–5  /  SHORTCUTS</value></data>
+  <data name="Home.Empty" xml:space="preserve"><value>This page will be available as its features are brought online.</value></data>
+  <data name="Home.Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Home.Ready" xml:space="preserve"><value>Ready on this PC</value></data>
+  <data name="Home.LaunchUnavailable" xml:space="preserve"><value>This item is not available yet.</value></data>
+  <data name="Home.LaunchFailed" xml:space="preserve"><value>Could not open this application. Check that it is installed.</value></data>
+  <data name="Tile.LastGame" xml:space="preserve"><value>Last played</value></data>
+  <data name="Tile.LastGame.Description" xml:space="preserve"><value>Your next session starts here</value></data>
+  <data name="Tile.Steam" xml:space="preserve"><value>Steam</value></data>
+  <data name="Tile.Steam.Description" xml:space="preserve"><value>Your library and recent games</value></data>
+  <data name="Tile.Epic" xml:space="preserve"><value>Epic Games</value></data>
+  <data name="Tile.Epic.Description" xml:space="preserve"><value>Your installed games</value></data>
+  <data name="Tile.CurseForge" xml:space="preserve"><value>CurseForge</value></data>
+  <data name="Tile.CurseForge.Description" xml:space="preserve"><value>Your Minecraft modpacks</value></data>
+  <data name="Tile.Minecraft" xml:space="preserve"><value>Minecraft</value></data>
+  <data name="Tile.Minecraft.Description" xml:space="preserve"><value>Open the official launcher</value></data>
+  <data name="Tile.Music" xml:space="preserve"><value>Spotify</value></data>
+  <data name="Tile.Music.Spotify" xml:space="preserve"><value>Spotify</value></data>
+  <data name="Tile.Music.Deezer" xml:space="preserve"><value>Deezer</value></data>
+  <data name="Tile.Music.YouTubeMusic" xml:space="preserve"><value>YouTube Music</value></data>
+  <data name="Tile.Music.Description" xml:space="preserve"><value>Your music, always close</value></data>
+  <data name="Tile.Discord" xml:space="preserve"><value>Discord</value></data>
+  <data name="Tile.Discord.Description" xml:space="preserve"><value>Friends, voice and activity</value></data>
+  <data name="Tile.Achievements" xml:space="preserve"><value>Latest achievement</value></data>
+  <data name="Tile.Achievements.Description" xml:space="preserve"><value>Your recent Steam unlocks</value></data>
+  <data name="Tile.Stats" xml:space="preserve"><value>System stats</value></data>
+  <data name="Tile.Stats.Description" xml:space="preserve"><value>A quick look at your PC</value></data>
+  <data name="Tile.Shortcuts" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="Tile.Shortcuts.Description" xml:space="preserve"><value>Your personal favorites</value></data>
+  <data name="Window.Minimize" xml:space="preserve"><value>Minimize</value></data>
+  <data name="Window.Maximize" xml:space="preserve"><value>Maximize or restore</value></data>
+  <data name="Window.Close" xml:space="preserve"><value>Close ARKADIA</value></data>
+  <data name="Settings.Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings.Theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="Settings.Theme.Blue" xml:space="preserve"><value>Blue</value></data>
+  <data name="Settings.Theme.Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings.Theme.Black" xml:space="preserve"><value>Black</value></data>
+  <data name="Settings.Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings.MusicService" xml:space="preserve"><value>Home music service</value></data>
+  <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
+  <data name="Settings.Language.French" xml:space="preserve"><value>French</value></data>
+  <data name="Settings.System" xml:space="preserve"><value>System behavior</value></data>
+  <data name="Settings.SteamApiKey" xml:space="preserve"><value>Steam Web API key</value></data>
+  <data name="Settings.SteamApiKeyHelp" xml:space="preserve"><value>Create a personal key at steamcommunity.com/dev/apikey. It is encrypted for your Windows account. To see your progress, also set Game details to Public in Steam.</value></data>
+  <data name="Settings.SaveSteamApiKey" xml:space="preserve"><value>Save key</value></data>
+  <data name="Settings.RunAtStartup" xml:space="preserve"><value>Run ARKADIA when I sign in</value></data>
+  <data name="Settings.StartMinimized" xml:space="preserve"><value>Start minimized to the notification area</value></data>
+  <data name="Settings.CloseToTray" xml:space="preserve"><value>Minimize to the notification area when closing</value></data>
+  <data name="Tray.Open" xml:space="preserve"><value>Open ARKADIA</value></data>
+  <data name="Tray.Quit" xml:space="preserve"><value>Quit ARKADIA</value></data>
+  <data name="Tray.HiddenNotice" xml:space="preserve"><value>ARKADIA is still running in the notification area.</value></data>
+  <data name="Games.Subtitle" xml:space="preserve"><value>Installed games discovered on this PC.</value></data>
+  <data name="Games.Refresh" xml:space="preserve"><value>Scan again</value></data>
+  <data name="Games.SortPlaytime" xml:space="preserve"><value>Sort by playtime ↓</value></data>
+  <data name="Games.Play" xml:space="preserve"><value>PLAY</value></data>
+  <data name="Games.PlaytimeUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Games.Empty" xml:space="preserve"><value>No installed games were found. Install games through Steam or Epic Games, then scan again.</value></data>
+  <data name="Games.ScanComplete" xml:space="preserve"><value>{0} installed games found.</value></data>
+  <data name="Games.ScanPartial" xml:space="preserve"><value>{0} games found; {1} provider scans failed. See the application log.</value></data>
+  <data name="Games.ProviderUnavailable" xml:space="preserve"><value>The launcher for this game is unavailable.</value></data>
+</root>

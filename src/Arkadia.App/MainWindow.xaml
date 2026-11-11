@@ -1,0 +1,873 @@
+<Window x:Class="Arkadia.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:icons="clr-namespace:Arkadia.App.Icons"
+        xmlns:loc="clr-namespace:Arkadia.App.Localization"
+        Title="ARKADIA"
+        Width="1280"
+        Height="800"
+        MinWidth="960"
+        MinHeight="600"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        Closing="MainWindow_Closing"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Window.InputBindings>
+        <KeyBinding Key="D1" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Home" />
+        <KeyBinding Key="D2" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Games" />
+        <KeyBinding Key="D3" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Achievements" />
+        <KeyBinding Key="D4" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Sound" />
+        <KeyBinding Key="D5" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Shortcuts" />
+    </Window.InputBindings>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="184" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="#16FFFFFF"
+                BorderBrush="#24FFFFFF"
+                BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="76" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="64" />
+                </Grid.RowDefinitions>
+
+                <Button Grid.Row="0"
+                        Style="{StaticResource BrandButtonStyle}"
+                        Command="{Binding SelectPageCommand}"
+                        CommandParameter="Home"
+                        AutomationProperties.Name="ARKADIA">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="M12,1 L23,21 H18 L12,10 L6,21 H1 Z"
+                              Fill="{DynamicResource AccentBrush}"
+                              Width="23"
+                              Height="23"
+                              Stretch="Uniform"
+                              Margin="0,0,12,0" />
+                        <TextBlock Text="ARKADIA"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <ItemsControl Grid.Row="1"
+                              ItemsSource="{Binding NavigationItems}"
+                              VerticalAlignment="Center">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.SelectPageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding Key}"
+                                    Tag="{Binding IsSelected}"
+                                    Style="{StaticResource NavigationButtonStyle}"
+                                    ToolTip="{Binding Title}"
+                                    AutomationProperties.Name="{Binding Title}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Path Data="{Binding Icon}"
+                                          Width="18"
+                                          Height="18"
+                                          Stretch="Uniform"
+                                          Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                          Margin="0,0,14,0" />
+                                    <TextBlock Text="{Binding Title}"
+                                               FontSize="13"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Grid.Row="2"
+                        Command="{Binding SelectPageCommand}"
+                        CommandParameter="Settings"
+                        Tag="{Binding IsSettingsSelected}"
+                        Style="{StaticResource NavigationButtonStyle}"
+                        ToolTip="{Binding [Navigation.Settings], Source={x:Static loc:LocalizationManager.Instance}}"
+                        AutomationProperties.Name="{Binding [Navigation.Settings], Source={x:Static loc:LocalizationManager.Instance}}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="{x:Static icons:IconCatalog.Settings}"
+                              Width="18"
+                              Height="18"
+                              Stretch="Uniform"
+                              Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              Margin="0,0,14,0" />
+                        <TextBlock Text="{Binding [Navigation.Settings], Source={x:Static loc:LocalizationManager.Instance}}"
+                                   FontSize="13"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="28,0,28,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="64" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0,0,22,0">
+                    <Ellipse Width="7"
+                             Height="7"
+                             Fill="{DynamicResource SuccessBrush}"
+                             Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding ConnectivityText}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ClockText}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0" />
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,18,0,20">
+                    <StackPanel>
+                        <TextBlock Text="{Binding CurrentPageTitle}"
+                                   FontSize="29"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding CurrentPageSubtitle}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="13"
+                                   Margin="0,5,0,0" />
+                    </StackPanel>
+                    <Border HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Padding="12,7"
+                            CornerRadius="14"
+                            Background="#14FFFFFF"
+                            BorderBrush="#20FFFFFF"
+                            BorderThickness="1">
+                        <TextBlock Text="{Binding [Home.ShortcutsHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Border>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Grid>
+                        <ItemsControl ItemsSource="{Binding HomeTiles}"
+                                      Visibility="{Binding IsHome, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource TileButtonStyle}"
+                                            Margin="0,0,12,12"
+                                            MinHeight="164"
+                                            HorizontalContentAlignment="Stretch"
+                                            VerticalContentAlignment="Stretch">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Viewbox Width="190"
+                                                     Height="190"
+                                                     HorizontalAlignment="Right"
+                                                     VerticalAlignment="Bottom"
+                                                     Margin="0,0,-12,-12"
+                                                     IsHitTestVisible="False"
+                                                     OpacityMask="{StaticResource DiagonalLogoFade}">
+                                                <Path Data="{Binding TileIcon}"
+                                                      Fill="#BFFFFFFF"
+                                                      Stretch="Uniform"
+                                                      Width="190"
+                                                      Height="190" />
+                                            </Viewbox>
+                                            <StackPanel Grid.Row="0">
+                                                <Border Width="40"
+                                                        Height="40"
+                                                        CornerRadius="20"
+                                                        Background="{Binding BrandColor}"
+                                                        HorizontalAlignment="Left"
+                                                        Margin="0,0,0,15">
+                                                    <Grid>
+                                                        <Path Data="{Binding TileIcon}"
+                                                              Width="21"
+                                                              Height="21"
+                                                              Stretch="Uniform"
+                                                              Fill="White"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="17"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           FontSize="11"
+                                                           Margin="0,5,0,0"
+                                                           TextWrapping="Wrap"
+                                                           MaxWidth="220" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Row="1"
+                                                       Text="↗"
+                                                       HorizontalAlignment="Right"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       FontSize="15" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Visibility="{Binding IsSettings, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18"
+                                Padding="20"
+                                Margin="0,0,12,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.9*" />
+                                    <ColumnDefinition Width="1.1*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0"
+                                        Background="#12FFFFFF"
+                                        BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="14"
+                                        Padding="20"
+                                        Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding [Settings.Appearance], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,18" />
+                                        <TextBlock Text="{Binding [Settings.Theme], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Margin="0,0,0,8" />
+                                        <ComboBox SelectedValue="{Binding SelectedTheme}"
+                                                  SelectedValuePath="Tag"
+                                                  SelectionChanged="Appearance_SelectionChanged"
+                                                  HorizontalAlignment="Stretch"
+                                                  Margin="0,0,0,16">
+                                            <ComboBoxItem Content="{Binding [Settings.Theme.Blue], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Blue" />
+                                            <ComboBoxItem Content="{Binding [Settings.Theme.Light], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Light" />
+                                            <ComboBoxItem Content="{Binding [Settings.Theme.Black], Source={x:Static loc:LocalizationManager.Instance}}" Tag="Black" />
+                                        </ComboBox>
+                                        <TextBlock Text="{Binding [Settings.Language], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Margin="0,0,0,8" />
+                                        <ComboBox SelectedValue="{Binding SelectedLanguage}"
+                                                  SelectedValuePath="Tag"
+                                                  SelectionChanged="Appearance_SelectionChanged"
+                                                  HorizontalAlignment="Stretch"
+                                                  Margin="0,0,0,16">
+                                            <ComboBoxItem Content="{Binding [Settings.Language.English], Source={x:Static loc:LocalizationManager.Instance}}" Tag="en" />
+                                            <ComboBoxItem Content="{Binding [Settings.Language.French], Source={x:Static loc:LocalizationManager.Instance}}" Tag="fr" />
+                                        </ComboBox>
+                                        <TextBlock Text="{Binding [Settings.MusicService], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Margin="0,0,0,8" />
+                                        <ComboBox SelectedValue="{Binding SelectedMusicService}"
+                                                  SelectedValuePath="Tag"
+                                                  SelectionChanged="Appearance_SelectionChanged"
+                                                  HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="Spotify" Tag="Spotify" />
+                                            <ComboBoxItem Content="Deezer" Tag="Deezer" />
+                                            <ComboBoxItem Content="YouTube Music" Tag="YouTubeMusic" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel Grid.Column="1">
+                                    <Border Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="20"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding [Settings.System], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,12" />
+                                            <CheckBox Content="{Binding [Settings.RunAtStartup], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding RunAtStartup}"
+                                                      Checked="SystemSetting_Changed"
+                                                      Unchecked="SystemSetting_Changed"
+                                                      Margin="0,7" />
+                                            <CheckBox Content="{Binding [Settings.StartMinimized], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding StartMinimized}"
+                                                      Checked="SystemSetting_Changed"
+                                                      Unchecked="SystemSetting_Changed"
+                                                      Margin="0,7" />
+                                            <CheckBox Content="{Binding [Settings.CloseToTray], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding CloseToTray}"
+                                                      Checked="SystemSetting_Changed"
+                                                      Unchecked="SystemSetting_Changed"
+                                                      Margin="0,7" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="20">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding [Settings.SteamApiKey], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,8" />
+                                            <TextBlock Text="{Binding [Settings.SteamApiKeyHelp], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,12" />
+                                            <PasswordBox x:Name="SteamApiKeyBox"
+                                                         Loaded="SteamApiKey_Loaded"
+                                                         PasswordChanged="SteamApiKey_Changed"
+                                                         AutomationProperties.Name="{Binding [Settings.SteamApiKey], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                         HorizontalAlignment="Stretch"
+                                                         Margin="0,0,0,12" />
+                                            <Button Content="{Binding [Settings.SaveSteamApiKey], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    Command="{Binding SaveSteamApiKeyCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    HorizontalAlignment="Left" />
+                                            <TextBlock Text="{Binding AchievementsStatusText}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,10,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Visibility="{Binding IsAchievements, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18"
+                                Padding="22"
+                                Margin="0,0,12,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="270" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0"
+                                        Background="#12FFFFFF"
+                                        BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="14"
+                                        Padding="14"
+                                        Margin="0,0,14,0">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top"
+                                                   Text="{Binding [Achievements.SelectGame], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   FontWeight="SemiBold"
+                                                   Margin="2,0,0,12" />
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                      HorizontalScrollBarVisibility="Disabled"
+                                                      MaxHeight="560">
+                                            <ItemsControl ItemsSource="{Binding Games}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Command="{Binding DataContext.SelectAchievementGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                                HorizontalContentAlignment="Stretch"
+                                                                Padding="8"
+                                                                Margin="0,0,0,7">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="54" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <Border Width="46"
+                                                                        Height="38"
+                                                                        CornerRadius="7"
+                                                                        Background="#20FFFFFF"
+                                                                        ClipToBounds="True"
+                                                                        VerticalAlignment="Center">
+                                                                    <Image Source="{Binding ArtworkUri}"
+                                                                           Stretch="UniformToFill" />
+                                                                </Border>
+                                                                <StackPanel Grid.Column="1"
+                                                                            VerticalAlignment="Center"
+                                                                            Margin="9,0,0,0">
+                                                                    <TextBlock Text="{Binding Title}"
+                                                                               FontSize="12"
+                                                                               FontWeight="SemiBold"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Text="{Binding ProviderDisplayName}"
+                                                                               FontSize="10"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               Margin="0,3,0,0" />
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </DockPanel>
+                                </Border>
+                                <Grid Grid.Column="1">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="16"
+                                            Margin="0,0,0,12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding SelectedAchievementGame.Title}"
+                                                           FontSize="18"
+                                                           FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding AchievementsStatusText}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,5,12,0" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Content="{Binding [Achievements.Load], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    Command="{Binding LoadAchievementsCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                    <Grid Grid.Row="1">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Border Grid.Row="0"
+                                                Visibility="{Binding HasAchievements, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                Background="#16FFFFFF"
+                                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="12"
+                                                Padding="12"
+                                                Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <DockPanel LastChildFill="False">
+                                                    <TextBlock Text="◆"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               FontSize="14"
+                                                               Margin="0,0,8,0" />
+                                                    <TextBlock Text="{Binding UnlockedAchievementCount}"
+                                                               Foreground="{DynamicResource SuccessBrush}"
+                                                               FontWeight="Bold" />
+                                                    <TextBlock Text=" / "
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    <TextBlock Text="{Binding Achievements.Count}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    <TextBlock Text="{Binding [Achievements.Unlocked], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               Margin="6,0,0,0" />
+                                                </DockPanel>
+                                                <ProgressBar Value="{Binding AchievementProgress}"
+                                                             Maximum="1"
+                                                             Height="5"
+                                                             Margin="0,10,0,0" />
+                                            </StackPanel>
+                                        </Border>
+                                        <ScrollViewer Grid.Row="1"
+                                                      VerticalScrollBarVisibility="Auto"
+                                                      HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Achievements}"
+                                                          Visibility="{Binding HasAchievements, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#12FFFFFF"
+                                                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="12"
+                                                                Padding="12"
+                                                                Margin="0,0,0,8">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="52" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <Image Grid.Column="0"
+                                                                       Source="{Binding IconUri, IsAsync=True}"
+                                                                       Width="40"
+                                                                       Height="40"
+                                                                       Stretch="UniformToFill"
+                                                                       Margin="0,0,12,0" />
+                                                                <StackPanel Grid.Column="1"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Name}"
+                                                                               FontWeight="SemiBold"
+                                                                               TextWrapping="Wrap" />
+                                                                    <TextBlock Text="{Binding Description}"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               FontSize="11"
+                                                                               TextWrapping="Wrap"
+                                                                               Margin="0,3,0,0" />
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="2"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Right">
+                                                                    <TextBlock Text="{Binding [Achievements.Unlocked], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                               Foreground="{DynamicResource SuccessBrush}"
+                                                                               Visibility="{Binding IsUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                               FontSize="11" />
+                                                                    <TextBlock Text="{Binding [Achievements.Locked], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               Visibility="{Binding IsUnlocked, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+                                                                               FontSize="11" />
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Visibility="{Binding IsShortcuts, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18"
+                                Padding="24"
+                                Margin="0,0,12,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Margin="0,0,0,18">
+                                    <TextBlock Text="{Binding [Shortcuts.Help], Source={x:Static loc:LocalizationManager.Instance}}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,12" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding ShortcutNameInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="{Binding [Shortcuts.Name], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                 AutomationProperties.Name="{Binding [Shortcuts.Name], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                 Margin="0,0,8,0"
+                                                 Padding="10,8" />
+                                        <TextBox Grid.Column="1"
+                                                 Text="{Binding ShortcutUriInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="{Binding [Shortcuts.Address], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                 AutomationProperties.Name="{Binding [Shortcuts.Address], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                 Margin="0,0,8,0"
+                                                 Padding="10,8" />
+                                        <Button Grid.Column="2"
+                                                Content="{Binding [Shortcuts.Add], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                Command="{Binding AddShortcutCommand}"
+                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                Padding="16,8" />
+                                    </Grid>
+                                </StackPanel>
+                                <ScrollViewer Grid.Row="1"
+                                              VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <Grid>
+                                        <ItemsControl ItemsSource="{Binding Shortcuts}"
+                                                      Visibility="{Binding HasShortcuts, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#12FFFFFF"
+                                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="14"
+                                                            Padding="12"
+                                                            Margin="0,0,0,9">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="54" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Grid.Column="0"
+                                                                    Width="42"
+                                                                    Height="42"
+                                                                    CornerRadius="12"
+                                                                    Background="#20FFFFFF"
+                                                                    BorderBrush="#20FFFFFF"
+                                                                    BorderThickness="1"
+                                                                    ClipToBounds="True"
+                                                                    VerticalAlignment="Center">
+                                                                <Grid>
+                                                                    <Image Source="{Binding FaviconUri}"
+                                                                           ImageFailed="ShortcutFavicon_ImageFailed"
+                                                                           Stretch="UniformToFill" />
+                                                                    <TextBlock x:Name="ShortcutIconFallback"
+                                                                               Text="↗"
+                                                                               FontSize="18"
+                                                                               Foreground="{DynamicResource AccentBrush}"
+                                                                               HorizontalAlignment="Center"
+                                                                               VerticalAlignment="Center"
+                                                                               Visibility="Collapsed" />
+                                                                </Grid>
+                                                            </Border>
+                                                            <Button Grid.Column="1"
+                                                                    Command="{Binding DataContext.LaunchShortcutCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    HorizontalContentAlignment="Stretch"
+                                                                    Padding="0"
+                                                                    Background="Transparent"
+                                                                    BorderThickness="0">
+                                                                <Grid VerticalAlignment="Center">
+                                                                    <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto" />
+                                                                        <RowDefinition Height="Auto" />
+                                                                    </Grid.RowDefinitions>
+                                                                    <TextBlock Text="{Binding Name}"
+                                                                               FontWeight="SemiBold"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Grid.Row="1"
+                                                                               Text="{Binding DisplayAddress}"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               FontSize="11"
+                                                                               TextTrimming="CharacterEllipsis"
+                                                                               Margin="0,4,0,0" />
+                                                                </Grid>
+                                                            </Button>
+                                                            <Button Grid.Column="2"
+                                                                    Content="×"
+                                                                    Command="{Binding DataContext.RemoveShortcutCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                                    ToolTip="{Binding [Shortcuts.Remove], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                    AutomationProperties.Name="{Binding [Shortcuts.Remove], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                    Margin="10,0,0,0"
+                                                                    Padding="10,4" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <DataTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding FaviconUri}" Value="{x:Null}">
+                                                            <Setter TargetName="ShortcutIconFallback" Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </DataTemplate.Triggers>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Text="{Binding [Shortcuts.Empty], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                   Visibility="{Binding IsShortcutsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="440" />
+                                    </Grid>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+
+                        <Border Visibility="{Binding IsGames, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18"
+                                Padding="22"
+                                Margin="0,0,12,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <DockPanel Grid.Row="0"
+                                           LastChildFill="False"
+                                           Margin="0,0,0,18">
+                                    <TextBlock Text="{Binding GamesStatusText}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"
+                                               DockPanel.Dock="Left" />
+                                    <Button Content="{Binding [Games.SortPlaytime], Source={x:Static loc:LocalizationManager.Instance}}"
+                                            Command="{Binding SortGamesByPlaytimeCommand}"
+                                            Padding="14,8"
+                                            Margin="0,0,8,0"
+                                            HorizontalAlignment="Right"
+                                            DockPanel.Dock="Right" />
+                                    <Button Content="{Binding [Games.Refresh], Source={x:Static loc:LocalizationManager.Instance}}"
+                                            Command="{Binding RefreshGamesCommand}"
+                                            Padding="14,8"
+                                            HorizontalAlignment="Right"
+                                            DockPanel.Dock="Right" />
+                                </DockPanel>
+                                <Grid Grid.Row="1">
+                                    <ItemsControl ItemsSource="{Binding Games}"
+                                                  Visibility="{Binding HasGames, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource GameCardButtonStyle}"
+                                                        Command="{Binding DataContext.LaunchGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Height="196"
+                                                        Margin="0,0,12,12"
+                                                        HorizontalContentAlignment="Stretch"
+                                                        VerticalContentAlignment="Stretch"
+                                                        AutomationProperties.Name="{Binding Title}">
+                                                    <Grid Background="#FF151A24"
+                                                          ClipToBounds="True">
+                                                        <Image Source="{Binding ArtworkUri, IsAsync=True}"
+                                                               Stretch="UniformToFill"
+                                                               Opacity="0.82" />
+                                                        <Border>
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                    <GradientStop Color="#07131D2B" Offset="0" />
+                                                                    <GradientStop Color="#20131D2B" Offset="0.35" />
+                                                                    <GradientStop Color="#D9141A25" Offset="0.76" />
+                                                                    <GradientStop Color="#F2141A25" Offset="1" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
+                                                        </Border>
+                                                        <Grid Margin="15,13">
+                                                            <Border HorizontalAlignment="Left"
+                                                                    VerticalAlignment="Top"
+                                                                    Background="#A8121720"
+                                                                    CornerRadius="10"
+                                                                    Padding="8,4">
+                                                                <TextBlock Text="{Binding ProviderDisplayName}"
+                                                                           Foreground="#EFFFFFFF"
+                                                                           FontSize="10"
+                                                                           FontWeight="Medium" />
+                                                            </Border>
+                                                            <StackPanel VerticalAlignment="Bottom">
+                                                                <TextBlock Text="{Binding Title}"
+                                                                           Foreground="White"
+                                                                           FontSize="15"
+                                                                           FontWeight="SemiBold"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           TextWrapping="Wrap"
+                                                                           MaxHeight="42" />
+                                                                <DockPanel Margin="0,7,0,0"
+                                                                           LastChildFill="False">
+                                                                    <TextBlock Text="{Binding [Games.Play], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                               Foreground="#DFFFFFFF"
+                                                                               FontSize="11"
+                                                                               FontWeight="Medium"
+                                                                               VerticalAlignment="Center"
+                                                                               DockPanel.Dock="Left" />
+                                                                    <Border DockPanel.Dock="Right"
+                                                                            Background="#64101824"
+                                                                            CornerRadius="9"
+                                                                            Padding="7,3"
+                                                                            Visibility="{Binding HasPlaytime, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBlock Text="{Binding PlaytimeText}"
+                                                                                   Foreground="#CFFFFFFF"
+                                                                                   FontSize="10"
+                                                                                   VerticalAlignment="Center" />
+                                                                    </Border>
+                                                                    <Border DockPanel.Dock="Right"
+                                                                            Background="#64101824"
+                                                                            CornerRadius="9"
+                                                                            Padding="7,3"
+                                                                            Visibility="{Binding HasPlaytime, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                                                        <TextBlock Text="{Binding [Games.PlaytimeUnavailable], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                                   Foreground="#CFFFFFFF"
+                                                                                   FontSize="10"
+                                                                                   VerticalAlignment="Center" />
+                                                                    </Border>
+                                                                </DockPanel>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding [Games.Empty], Source={x:Static loc:LocalizationManager.Instance}}"
+                                               Visibility="{Binding IsGamesEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               MaxWidth="440" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Visibility="{Binding IsComingSoon, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18"
+                                Padding="28"
+                                Margin="0,0,12,12">
+                            <StackPanel VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        MaxWidth="520">
+                                <TextBlock Text="{Binding CurrentPageTitle}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding ComingSoonText}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Margin="0,12,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+
+            <TextBlock Grid.Row="2"
+                       Text="{Binding LaunchMessage}"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontSize="12"
+                       HorizontalAlignment="Right"
+                       Margin="0,8,12,0" />
+        </Grid>
+    </Grid>
+</Window>
