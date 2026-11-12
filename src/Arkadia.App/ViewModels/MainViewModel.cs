@@ -23,6 +23,20 @@ namespace Arkadia.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IDisposable
 {
+    private static readonly string[] DefaultHomeTileOrder =
+    [
+        "music",
+        "discord",
+        "steam",
+        "epic",
+        "curseforge",
+        "minecraft",
+        "last-game",
+        "achievement",
+        "system",
+        "shortcuts"
+    ];
+
     public sealed record MusicServiceOption(
         string Id,
         string TitleKey,
@@ -52,6 +66,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _comingSoonText = string.Empty;
     private string _connectivityText = string.Empty;
     private bool _isSettingsSelected;
+    private bool _isHomeEditMode;
+    private string _homeLayoutStatusText = string.Empty;
     private string _selectedTheme = "Blue";
     private string _selectedLanguage = "en";
     private string _selectedMusicService = "Spotify";
@@ -76,6 +92,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isUpdatingMusicVolume;
     private double _musicVolume;
     private bool _canAdjustMusicVolume;
+    private bool _isMusicMuted;
+    private bool _isMusicPlaying;
     private string _currentTrackTitle = string.Empty;
     private string _currentTrackArtist = string.Empty;
     private string? _currentTrackSourceAppUserModelId;
@@ -134,6 +152,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             new("system", "◌", "Tile.Stats", "Tile.Stats.Description"),
             new("shortcuts", "▦", "Tile.Shortcuts", "Tile.Shortcuts.Description", navigationKey: "Shortcuts")
         ];
+        VisibleHomeTiles = [];
         Games = [];
         FilteredGames = [];
         Achievements = [];
@@ -146,6 +165,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LocalizationManager.Instance.PropertyChanged += LocalizationChanged;
         _audioDeviceNotificationService.DevicesChanged += AudioDevicesChanged;
         UpdateLocalizedProperties();
+        RefreshVisibleHomeTiles();
         UpdateClock();
         _clockTimer = new System.Threading.Timer(
             _ => _synchronizationContext?.Post(static state => ((MainViewModel)state!).UpdateClock(), this),
@@ -201,6 +221,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
     public ObservableCollection<HomeTileViewModel> HomeTiles { get; }
+    public ObservableCollection<HomeTileViewModel> VisibleHomeTiles { get; }
     public ObservableCollection<GameEntry> Games { get; }
     public ObservableCollection<GameEntry> FilteredGames { get; }
     public ObservableCollection<GameAchievement> Achievements { get; }
@@ -215,6 +236,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsSound => _currentPageKey == "Sound";
     public bool IsShortcuts => _currentPageKey == "Shortcuts";
     public bool IsSettings => _currentPageKey == "Settings";
+    public bool IsHomeEditMode
+    {
+        get => _isHomeEditMode;
+        private set
+        {
+            if (SetProperty(ref _isHomeEditMode, value))
+            {
+                OnPropertyChanged(nameof(HomeLayoutModeLabel));
+                RefreshVisibleHomeTiles();
+            }
+        }
+    }
+
+    public string HomeLayoutModeLabel => LocalizationManager.Instance[
+        IsHomeEditMode ? "Home.Layout.Done" : "Home.Layout.Edit"];
+
+    public string HomeLayoutStatusText
+    {
+        get => _homeLayoutStatusText;
+        private set => SetProperty(ref _homeLayoutStatusText, value);
+    }
     public bool IsComingSoon => !IsHome && !IsGames && !IsAchievements && !IsSound && !IsShortcuts && !IsSettings;
     public bool HasGames => Games.Count > 0;
     public bool HasFilteredGames => FilteredGames.Count > 0;
@@ -483,6 +525,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _currentTrackTitle, value))
             {
                 OnPropertyChanged(nameof(HasCurrentTrack));
+                OnPropertyChanged(nameof(MusicPlayerTrackTitle));
+                OnPropertyChanged(nameof(MusicPlayerTrackArtist));
             }
         }
     }
@@ -490,7 +534,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CurrentTrackArtist
     {
         get => _currentTrackArtist;
-        private set => SetProperty(ref _currentTrackArtist, value);
+        private set
+        {
+            if (SetProperty(ref _currentTrackArtist, value))
+            {
+                OnPropertyChanged(nameof(MusicPlayerTrackArtist));
+            }
+        }
     }
 
     public BitmapImage? CurrentTrackArtwork
@@ -500,6 +550,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     public bool HasCurrentTrack => !string.IsNullOrWhiteSpace(CurrentTrackTitle);
+    public string MusicPlayerTrackTitle => HasCurrentTrack
+        ? CurrentTrackTitle
+        : LocalizationManager.Instance["Home.MediaControl.NoTrack"];
+    public string MusicPlayerTrackArtist => HasCurrentTrack
+        ? CurrentTrackArtist
+        : SelectedMusicService;
+
+    public bool IsMusicPlaying
+    {
+        get => _isMusicPlaying;
+        private set => SetProperty(ref _isMusicPlaying, value);
+    }
 
     public double MusicVolume
     {
@@ -549,6 +611,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _canAdjustMusicVolume, value);
     }
 
+    public bool IsMusicMuted
+    {
+        get => _isMusicMuted;
+        private set
+        {
+            if (SetProperty(ref _isMusicMuted, value))
+            {
+                OnPropertyChanged(nameof(MusicMuteTooltip));
+            }
+        }
+    }
+
+    public string MusicMuteTooltip => LocalizationManager.Instance[
+        IsMusicMuted ? "Home.MediaControl.Unmute" : "Home.MediaControl.Mute"];
+
     public string SelectedTheme
     {
         get => _selectedTheme;
@@ -582,6 +659,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 string.Equals(item.Id, value, StringComparison.OrdinalIgnoreCase));
             if (service is not null && SetProperty(ref _selectedMusicService, service.Id))
             {
+                OnPropertyChanged(nameof(MusicPlayerTrackArtist));
                 var musicTile = HomeTiles.First(tile => tile.Id is "spotify" or "deezer" or "youtubemusic");
                 musicTile.SetMusicService(
                     service.Id.ToLowerInvariant(),
@@ -596,7 +674,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<MusicServiceOption> MusicServices { get; } =
     [
         new("Spotify", "Tile.Music.Spotify", "Tile.Music.Description", "spotify:"),
-        new("Deezer", "Tile.Music.Deezer", "Tile.Music.Description", "https://www.deezer.com/collection/tracks"),
+        new("Deezer", "Tile.Music.Deezer", "Tile.Music.Description", "deezer://"),
         new("YouTubeMusic", "Tile.Music.YouTubeMusic", "Tile.Music.Description", "https://music.youtube.com/")
     ];
     public bool IsSettingsSelected
@@ -1244,6 +1322,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             string.Equals(service.Id, settings.MusicService, StringComparison.OrdinalIgnoreCase))?.Id
             ?? "Spotify";
         ApplySelectedMusicService();
+        ApplyHomeTileLayout(settings.HomeTiles);
         RefreshMusicVolume();
         await RefreshMusicSessionAsync();
         try
@@ -1387,6 +1466,95 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private async Task OpenMusicAppAsync(CancellationToken cancellationToken)
+    {
+        var musicTile = HomeTiles.First(tile =>
+            tile.Id is "spotify" or "deezer" or "youtubemusic");
+        await LaunchTileAsync(musicTile, cancellationToken);
+    }
+
+    [RelayCommand]
+    private void ToggleHomeEditMode()
+    {
+        IsHomeEditMode = !IsHomeEditMode;
+    }
+
+    [RelayCommand]
+    private async Task ResetHomeTileLayoutAsync(CancellationToken cancellationToken)
+    {
+        foreach (var tile in HomeTiles)
+        {
+            tile.IsVisible = true;
+        }
+
+        for (var targetIndex = 0; targetIndex < DefaultHomeTileOrder.Length; targetIndex++)
+        {
+            var tile = HomeTiles.FirstOrDefault(item =>
+                string.Equals(item.LayoutId, DefaultHomeTileOrder[targetIndex], StringComparison.Ordinal));
+            if (tile is null)
+            {
+                continue;
+            }
+
+            var currentIndex = HomeTiles.IndexOf(tile);
+            if (currentIndex != targetIndex)
+            {
+                HomeTiles.Move(currentIndex, targetIndex);
+            }
+        }
+
+        RefreshVisibleHomeTiles();
+        await PersistHomeTileLayoutAsync(cancellationToken);
+    }
+
+    [RelayCommand]
+    private async Task MoveHomeTileUpAsync(HomeTileViewModel? tile, CancellationToken cancellationToken)
+    {
+        await MoveHomeTileAsync(tile, -1, cancellationToken);
+    }
+
+    [RelayCommand]
+    private async Task MoveHomeTileDownAsync(HomeTileViewModel? tile, CancellationToken cancellationToken)
+    {
+        await MoveHomeTileAsync(tile, 1, cancellationToken);
+    }
+
+    [RelayCommand]
+    private async Task ToggleHomeTileVisibilityAsync(HomeTileViewModel? tile, CancellationToken cancellationToken)
+    {
+        if (tile is null)
+        {
+            return;
+        }
+
+        tile.IsVisible = !tile.IsVisible;
+        RefreshVisibleHomeTiles();
+        await PersistHomeTileLayoutAsync(cancellationToken);
+    }
+
+    private async Task MoveHomeTileAsync(
+        HomeTileViewModel? tile,
+        int offset,
+        CancellationToken cancellationToken)
+    {
+        if (tile is null)
+        {
+            return;
+        }
+
+        var currentIndex = HomeTiles.IndexOf(tile);
+        var targetIndex = currentIndex + offset;
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= HomeTiles.Count)
+        {
+            return;
+        }
+
+        HomeTiles.Move(currentIndex, targetIndex);
+        RefreshVisibleHomeTiles();
+        await PersistHomeTileLayoutAsync(cancellationToken);
+    }
+
+    [RelayCommand]
     private async Task LaunchTileAsync(HomeTileViewModel? tile, CancellationToken cancellationToken)
     {
         if (tile is null)
@@ -1413,19 +1581,66 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ToggleMusicPlayback()
+    private async Task ToggleMusicPlaybackAsync()
     {
-        SendDeezerMediaCommand(
+        await SendMusicMediaCommandAsync(
+            MediaTransportCommand.TogglePlayPause,
             MediaControlService.TogglePlayPause,
             "Home.MediaControl.Pause");
     }
 
     [RelayCommand]
-    private void PlayNextMusicTrack()
+    private async Task PlayNextMusicTrackAsync()
     {
-        SendDeezerMediaCommand(
+        await SendMusicMediaCommandAsync(
+            MediaTransportCommand.PlayNext,
             MediaControlService.PlayNextTrack,
             "Home.MediaControl.Next");
+    }
+
+    [RelayCommand]
+    private async Task PlayPreviousMusicTrackAsync()
+    {
+        await SendMusicMediaCommandAsync(
+            MediaTransportCommand.PlayPrevious,
+            MediaControlService.PlayPreviousTrack,
+            "Home.MediaControl.Previous");
+    }
+
+    [RelayCommand]
+    private void ToggleMusicMute()
+    {
+        if (!CanAdjustMusicVolume)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!WindowsAudioSessionService.TrySetMuted(
+                    SelectedMusicService,
+                    !IsMusicMuted,
+                    _currentTrackSourceAppUserModelId))
+            {
+                CanAdjustMusicVolume = false;
+                LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Failed"];
+                return;
+            }
+
+            IsMusicMuted = !IsMusicMuted;
+        }
+        catch (COMException exception)
+        {
+            CanAdjustMusicVolume = false;
+            Log.Warning(exception, "Could not mute the audio session for {MusicService}.", SelectedMusicService);
+            LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Failed"];
+        }
+        catch (Win32Exception exception)
+        {
+            CanAdjustMusicVolume = false;
+            Log.Warning(exception, "Could not mute the audio session for {MusicService}.", SelectedMusicService);
+            LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Failed"];
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanRefreshGames))]
@@ -1795,9 +2010,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var snapshot = await WindowsMediaSessionService.GetCurrentSessionAsync(CancellationToken.None);
+            var snapshot = await WindowsMediaSessionService.GetCurrentSessionAsync(
+                SelectedMusicService,
+                CancellationToken.None);
             CurrentTrackTitle = snapshot?.Title ?? string.Empty;
             CurrentTrackArtist = snapshot?.Artist ?? string.Empty;
+            IsMusicPlaying = snapshot?.IsPlaying ?? false;
             _currentTrackSourceAppUserModelId = snapshot?.SourceAppUserModelId;
             CurrentTrackArtwork = snapshot?.Artwork;
             RefreshMusicVolume();
@@ -1832,6 +2050,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         CurrentTrackTitle = string.Empty;
         CurrentTrackArtist = string.Empty;
+        IsMusicPlaying = false;
         _currentTrackSourceAppUserModelId = null;
         CurrentTrackArtwork = null;
     }
@@ -1854,6 +2073,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 _isUpdatingMusicVolume = true;
                 MusicVolume = volume.Value;
+                IsMusicMuted = WindowsAudioSessionService.GetIsMuted(
+                    SelectedMusicService,
+                    _currentTrackSourceAppUserModelId) ?? false;
+            }
+            else
+            {
+                IsMusicMuted = false;
             }
         }
         catch (COMException exception)
@@ -1890,6 +2116,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         ComingSoonText = LocalizationManager.Instance["Home.Empty"];
         ConnectivityText = LocalizationManager.Instance["Home.Ready"];
+        OnPropertyChanged(nameof(HomeLayoutModeLabel));
+        OnPropertyChanged(nameof(MusicPlayerTrackTitle));
+        OnPropertyChanged(nameof(MusicPlayerTrackArtist));
+        OnPropertyChanged(nameof(MusicMuteTooltip));
         UpdateGamesStatusText();
         RefreshFilteredGames();
     }
@@ -1974,7 +2204,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         CloseToTray,
         MusicService: SelectedMusicService,
         Shortcuts: Shortcuts.ToArray(),
-        AudioProfiles: AudioProfiles.ToArray());
+        AudioProfiles: AudioProfiles.ToArray(),
+        HomeTiles: HomeTiles
+            .Select(tile => new HomeTileLayoutEntry(tile.LayoutId, tile.IsVisible))
+            .ToArray());
 
     private static bool IsValidShortcut(string name, string uriText) =>
         !string.IsNullOrWhiteSpace(name)
@@ -1994,21 +2227,110 @@ public partial class MainViewModel : ObservableObject, IDisposable
             service.LaunchUri);
     }
 
-    private void SendDeezerMediaCommand(Action sendCommand, string commandName)
+    private void ApplyHomeTileLayout(IReadOnlyList<HomeTileLayoutEntry>? savedLayout)
     {
-        if (!string.Equals(SelectedMusicService, "Deezer", StringComparison.OrdinalIgnoreCase))
+        if (savedLayout is null || savedLayout.Count == 0)
         {
+            RefreshVisibleHomeTiles();
             return;
         }
 
+        var tilesById = HomeTiles.ToDictionary(tile => tile.LayoutId, StringComparer.Ordinal);
+        var savedIds = new HashSet<string>(StringComparer.Ordinal);
+        if (savedLayout.Any(entry =>
+                entry is null
+                || !tilesById.ContainsKey(entry.Id)
+                || !savedIds.Add(entry.Id)))
+        {
+            Log.Warning("The saved home tile layout is invalid; using the default layout.");
+            RefreshVisibleHomeTiles();
+            return;
+        }
+
+        foreach (var entry in savedLayout)
+        {
+            tilesById[entry.Id].IsVisible = entry.IsVisible;
+        }
+
+        var orderedTiles = savedLayout
+            .Select(entry => tilesById[entry.Id])
+            .Concat(HomeTiles.Where(tile => !savedIds.Contains(tile.LayoutId)))
+            .ToArray();
+        for (var targetIndex = 0; targetIndex < orderedTiles.Length; targetIndex++)
+        {
+            var currentIndex = HomeTiles.IndexOf(orderedTiles[targetIndex]);
+            if (currentIndex != targetIndex)
+            {
+                HomeTiles.Move(currentIndex, targetIndex);
+            }
+        }
+
+        RefreshVisibleHomeTiles();
+    }
+
+    private void RefreshVisibleHomeTiles()
+    {
+        VisibleHomeTiles.Clear();
+        foreach (var tile in HomeTiles)
+        {
+            if (tile.IsVisible || IsHomeEditMode)
+            {
+                VisibleHomeTiles.Add(tile);
+            }
+        }
+    }
+
+    private async Task PersistHomeTileLayoutAsync(CancellationToken cancellationToken)
+    {
         try
         {
-            sendCommand();
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            HomeLayoutStatusText = LocalizationManager.Instance["Home.Layout.Saved"];
+        }
+        catch (IOException exception)
+        {
+            Log.Error(exception, "Could not save the home tile layout.");
+            HomeLayoutStatusText = LocalizationManager.Instance["Home.Layout.SaveFailed"];
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Error(exception, "Access was denied while saving the home tile layout.");
+            HomeLayoutStatusText = LocalizationManager.Instance["Home.Layout.SaveFailed"];
+        }
+    }
+
+    private async Task SendMusicMediaCommandAsync(
+        MediaTransportCommand command,
+        Action fallbackCommand,
+        string commandName)
+    {
+        try
+        {
+            var sent = false;
+            try
+            {
+                sent = await WindowsMediaSessionService.SendCommandAsync(
+                    SelectedMusicService,
+                    _currentTrackSourceAppUserModelId,
+                    command,
+                    CancellationToken.None);
+            }
+            catch (Exception exception) when (exception is COMException or InvalidOperationException)
+            {
+                Log.Debug(exception, "Could not send media command {CommandName} through the active {MusicService} session.", commandName, SelectedMusicService);
+            }
+
+            if (!sent)
+            {
+                fallbackCommand();
+            }
+
             LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Sent"];
+            await RefreshMusicSessionAsync();
         }
         catch (Win32Exception exception)
         {
-            Log.Warning(exception, "Could not send the Deezer media command {CommandName}.", commandName);
+            Log.Warning(exception, "Could not send the media command {CommandName} for {MusicService}.", commandName, SelectedMusicService);
             LaunchMessage = LocalizationManager.Instance["Home.MediaControl.Failed"];
         }
     }

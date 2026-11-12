@@ -148,6 +148,48 @@ public sealed class WindowsAudioSessionService
         return false;
     }
 
+    public static bool? GetIsMuted(
+        string musicService,
+        string? sourceAppUserModelId = null)
+    {
+        using var enumerator = new MMDeviceEnumerator();
+        using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        var sessions = device.AudioSessionManager.Sessions;
+
+        for (var index = 0; index < sessions.Count; index++)
+        {
+            using var session = sessions[index];
+            if (MatchesMusicService(session, musicService, sourceAppUserModelId))
+            {
+                return session.SimpleAudioVolume.Mute;
+            }
+        }
+
+        return null;
+    }
+
+    public static bool TrySetMuted(
+        string musicService,
+        bool isMuted,
+        string? sourceAppUserModelId = null)
+    {
+        using var enumerator = new MMDeviceEnumerator();
+        using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        var sessions = device.AudioSessionManager.Sessions;
+
+        for (var index = 0; index < sessions.Count; index++)
+        {
+            using var session = sessions[index];
+            if (MatchesMusicService(session, musicService, sourceAppUserModelId))
+            {
+                session.SimpleAudioVolume.Mute = isMuted;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static string? GetDefaultDeviceId(MMDeviceEnumerator enumerator, DataFlow dataFlow)
     {
         try

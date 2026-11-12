@@ -8,11 +8,14 @@ public static class MediaControlService
     private const uint InputKeyboard = 1;
     private const uint KeyeventfKeyup = 0x0002;
     private const ushort VirtualKeyMediaNextTrack = 0xB0;
+    private const ushort VirtualKeyMediaPreviousTrack = 0xB1;
     private const ushort VirtualKeyMediaPlayPause = 0xB3;
 
     public static void TogglePlayPause() => SendMediaKey(VirtualKeyMediaPlayPause);
 
     public static void PlayNextTrack() => SendMediaKey(VirtualKeyMediaNextTrack);
+
+    public static void PlayPreviousTrack() => SendMediaKey(VirtualKeyMediaPreviousTrack);
 
     private static void SendMediaKey(ushort virtualKey)
     {

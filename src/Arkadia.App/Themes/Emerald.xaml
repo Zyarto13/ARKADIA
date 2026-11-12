@@ -5,13 +5,28 @@
         <GradientStop Color="#FF0B1C16" Offset="0.56" />
         <GradientStop Color="#FF0A2119" Offset="1" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF10231B" />
-    <SolidColorBrush x:Key="ComboBoxPopupBackgroundBrush" Color="#FF0D1D16" />
-    <SolidColorBrush x:Key="CardHoverBrush" Color="#FF183126" />
+    <LinearGradientBrush x:Key="CardBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF153026" Offset="0" />
+        <GradientStop Color="#FF0C1C16" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ComboBoxPopupBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FF143025" Offset="0" />
+        <GradientStop Color="#FF0B1A14" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CardHoverBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF1E4232" Offset="0" />
+        <GradientStop Color="#FF123021" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="CardBorderBrush" Color="#FF294A3A" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF0F7F3" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFA2B9AD" />
     <Color x:Key="AccentColor">#FF45D6A0</Color>
-    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="SuccessBrush" Color="#FF65E6A2" />
+    <LinearGradientBrush x:Key="AccentBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF45D6A0" Offset="0" />
+        <GradientStop Color="#FFB0F27B" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="SuccessBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF65E6A2" Offset="0" />
+        <GradientStop Color="#FFB0F27B" Offset="1" />
+    </LinearGradientBrush>
 </ResourceDictionary>

@@ -578,13 +578,13 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="InteractionSurface"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="18"
-                                    Padding="{TemplateBinding Padding}"
-                                    ClipToBounds="True">
+                            <controls:RoundedClipBorder x:Name="InteractionSurface"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="18"
+                                                        Padding="{TemplateBinding Padding}"
+                                                        ClipToBounds="True">
                                 <Grid>
                                     <ContentPresenter />
                                     <Canvas x:Name="InteractionRippleHost"
@@ -592,7 +592,7 @@
                                             IsHitTestVisible="False"
                                             Panel.ZIndex="1" />
                                 </Grid>
-                            </Border>
+                            </controls:RoundedClipBorder>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="InteractionSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />

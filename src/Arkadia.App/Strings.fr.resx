@@ -51,10 +51,25 @@
   <data name="Home.Ready" xml:space="preserve"><value>Prêt sur ce PC</value></data>
   <data name="Home.LaunchUnavailable" xml:space="preserve"><value>Cette fonctionnalité n’est pas encore disponible.</value></data>
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Impossible d’ouvrir cette application. Vérifiez qu’elle est installée.</value></data>
-  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Lire ou mettre Deezer en pause</value></data>
+  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Lire ou mettre la musique en pause</value></data>
+  <data name="Home.MediaControl.Previous" xml:space="preserve"><value>Lire le titre précédent</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Lire le titre suivant</value></data>
-  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Volume Deezer</value></data>
+  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Volume de la musique (0-100)</value></data>
+  <data name="Home.MediaControl.Mute" xml:space="preserve"><value>Couper le son de la musique</value></data>
+  <data name="Home.MediaControl.Unmute" xml:space="preserve"><value>Rétablir le son de la musique</value></data>
   <data name="Home.MediaControl.Favorites" xml:space="preserve"><value>Écouter un favori</value></data>
+  <data name="Home.MediaControl.NoTrack" xml:space="preserve"><value>Aucune musique en cours</value></data>
+  <data name="Home.MediaControl.Open" xml:space="preserve"><value>Ouvrir le lecteur musical</value></data>
+  <data name="Home.Layout.Edit" xml:space="preserve"><value>Personnaliser</value></data>
+  <data name="Home.Layout.Done" xml:space="preserve"><value>Terminer</value></data>
+  <data name="Home.Layout.Reset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="Home.Layout.MoveUp" xml:space="preserve"><value>Avancer la tuile</value></data>
+  <data name="Home.Layout.MoveDown" xml:space="preserve"><value>Reculer la tuile</value></data>
+  <data name="Home.Layout.Hide" xml:space="preserve"><value>Masquer la tuile</value></data>
+  <data name="Home.Layout.Show" xml:space="preserve"><value>Afficher la tuile</value></data>
+  <data name="Home.Layout.Hidden" xml:space="preserve"><value>Masquée · cliquer sur + pour rétablir</value></data>
+  <data name="Home.Layout.Saved" xml:space="preserve"><value>Disposition enregistrée</value></data>
+  <data name="Home.Layout.SaveFailed" xml:space="preserve"><value>Impossible d’enregistrer la disposition</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Commande envoyée au lecteur multimédia actif.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Impossible d’envoyer la commande multimédia.</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Dernier jeu joué</value></data>

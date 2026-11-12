@@ -51,10 +51,25 @@
   <data name="Home.Ready" xml:space="preserve"><value>Ready on this PC</value></data>
   <data name="Home.LaunchUnavailable" xml:space="preserve"><value>This item is not available yet.</value></data>
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Could not open this application. Check that it is installed.</value></data>
-  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Play or pause Deezer</value></data>
+  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Play or pause music</value></data>
+  <data name="Home.MediaControl.Previous" xml:space="preserve"><value>Play previous track</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Play next track</value></data>
-  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Deezer volume</value></data>
+  <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Music volume (0-100)</value></data>
+  <data name="Home.MediaControl.Mute" xml:space="preserve"><value>Mute music</value></data>
+  <data name="Home.MediaControl.Unmute" xml:space="preserve"><value>Unmute music</value></data>
   <data name="Home.MediaControl.Favorites" xml:space="preserve"><value>Play a favorite</value></data>
+  <data name="Home.MediaControl.NoTrack" xml:space="preserve"><value>Nothing playing</value></data>
+  <data name="Home.MediaControl.Open" xml:space="preserve"><value>Open music app</value></data>
+  <data name="Home.Layout.Edit" xml:space="preserve"><value>Customize</value></data>
+  <data name="Home.Layout.Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Home.Layout.Reset" xml:space="preserve"><value>Reset layout</value></data>
+  <data name="Home.Layout.MoveUp" xml:space="preserve"><value>Move tile earlier</value></data>
+  <data name="Home.Layout.MoveDown" xml:space="preserve"><value>Move tile later</value></data>
+  <data name="Home.Layout.Hide" xml:space="preserve"><value>Hide tile</value></data>
+  <data name="Home.Layout.Show" xml:space="preserve"><value>Show tile</value></data>
+  <data name="Home.Layout.Hidden" xml:space="preserve"><value>Hidden · click + to restore</value></data>
+  <data name="Home.Layout.Saved" xml:space="preserve"><value>Layout saved</value></data>
+  <data name="Home.Layout.SaveFailed" xml:space="preserve"><value>Could not save layout</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Media command sent to the active player.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Could not send the media command.</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Last played</value></data>

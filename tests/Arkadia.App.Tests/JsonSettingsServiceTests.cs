@@ -27,6 +27,11 @@ public sealed class JsonSettingsServiceTests
                     "Night",
                     [new AudioVolumeSetting("spotify", 0.25f, true)],
                     [new AudioDeviceVolumeSetting("headphones-id", false, 0.6f, false)])
+            ],
+            HomeTiles:
+            [
+                new HomeTileLayoutEntry("music"),
+                new HomeTileLayoutEntry("steam", false)
             ]);
 
         try
@@ -36,9 +41,10 @@ public sealed class JsonSettingsServiceTests
             var loaded = await service.LoadAsync(CancellationToken.None);
 
             Assert.Equal(
-                settings with { Shortcuts = null, AudioProfiles = null },
-                loaded with { Shortcuts = null, AudioProfiles = null });
+                settings with { Shortcuts = null, AudioProfiles = null, HomeTiles = null },
+                loaded with { Shortcuts = null, AudioProfiles = null, HomeTiles = null });
             Assert.Equal(settings.Shortcuts, loaded.Shortcuts);
+            Assert.Equal(settings.HomeTiles!.ToArray(), loaded.HomeTiles!.ToArray());
             Assert.Collection(
                 loaded.AudioProfiles!,
                 profile =>

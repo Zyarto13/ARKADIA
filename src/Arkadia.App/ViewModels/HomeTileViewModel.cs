@@ -13,6 +13,7 @@ public sealed class HomeTileViewModel : ObservableObject
     private string _descriptionKey;
     private string _id;
     private string? _launchUri;
+    private bool _isVisible = true;
 
     public HomeTileViewModel(
         string id,
@@ -32,10 +33,26 @@ public sealed class HomeTileViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(Description));
+            OnPropertyChanged(nameof(VisibilityTooltip));
         };
     }
 
     public string Id => _id;
+    public string LayoutId => _id is "spotify" or "deezer" or "youtubemusic" ? "music" : _id;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set
+        {
+            if (SetProperty(ref _isVisible, value))
+            {
+                OnPropertyChanged(nameof(VisibilityTooltip));
+            }
+        }
+    }
+    public string VisibilityTooltip => LocalizationManager.Instance[
+        IsVisible ? "Home.Layout.Hide" : "Home.Layout.Show"];
+
     public string Glyph { get; }
     public string? LaunchUri => _launchUri;
     public string? NavigationKey { get; }

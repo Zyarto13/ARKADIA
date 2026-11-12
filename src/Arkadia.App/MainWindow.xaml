@@ -1,6 +1,7 @@
 <Window x:Class="Arkadia.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Arkadia.App.Controls"
         xmlns:icons="clr-namespace:Arkadia.App.Icons"
         xmlns:loc="clr-namespace:Arkadia.App.Localization"
         Title="ARKADIA"
@@ -37,6 +38,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="76" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="270" />
                     <RowDefinition Height="64" />
                 </Grid.RowDefinitions>
 
@@ -64,34 +66,230 @@
                     </StackPanel>
                 </Button>
 
-                <ItemsControl Grid.Row="1"
-                              ItemsSource="{Binding NavigationItems}"
-                              VerticalAlignment="Center">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Command="{Binding DataContext.SelectPageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding Key}"
-                                    Tag="{Binding IsSelected}"
-                                    Style="{StaticResource NavigationButtonStyle}"
-                                    ToolTip="{Binding Title}"
-                                    AutomationProperties.Name="{Binding Title}">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Data="{Binding Icon}"
-                                          Width="18"
-                                          Height="18"
-                                          Stretch="Uniform"
-                                          Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                          Margin="0,0,14,0" />
-                                    <TextBlock Text="{Binding Title}"
-                                               FontSize="13"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding NavigationItems}"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.SelectPageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding Key}"
+                                        Tag="{Binding IsSelected}"
+                                        Style="{StaticResource NavigationButtonStyle}"
+                                        ToolTip="{Binding Title}"
+                                        AutomationProperties.Name="{Binding Title}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Path Data="{Binding Icon}"
+                                              Width="18"
+                                              Height="18"
+                                              Stretch="Uniform"
+                                              Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                              Margin="0,0,14,0" />
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontSize="13"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
 
-                <Button Grid.Row="2"
+                <Border Grid.Row="2"
+                        Margin="10,4,10,8"
+                        Padding="9"
+                        CornerRadius="16"
+                        Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <Grid Margin="1,0,1,7">
+                            <TextBlock Text="{Binding SelectedMusicService}"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <Button HorizontalAlignment="Right"
+                                    Width="25"
+                                    Height="24"
+                                    Padding="4"
+                                    Style="{StaticResource SurfaceButtonStyle}"
+                                    Command="{Binding OpenMusicAppCommand}"
+                                    ToolTip="{Binding [Home.MediaControl.Open], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    AutomationProperties.Name="{Binding [Home.MediaControl.Open], Source={x:Static loc:LocalizationManager.Instance}}">
+                                <TextBlock Text="↗"
+                                           FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Button>
+                        </Grid>
+                        <controls:RoundedClipBorder Height="98"
+                                                    CornerRadius="12"
+                                                    Background="{DynamicResource CardHoverBrush}"
+                                                    ClipToBounds="True">
+                            <Grid>
+                                <Image Source="{Binding CurrentTrackArtwork}"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       Visibility="{Binding HasCurrentTrack, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <Path Data="M 4,8 L 10,3 L 16,8 L 16,16 L 4,16 Z M 8,16 L 8,11 L 12,11 L 12,16"
+                                      Fill="{DynamicResource AccentBrush}"
+                                      Width="22"
+                                      Height="22"
+                                      Stretch="Uniform"
+                                      Opacity="0.62"
+                                      Visibility="{Binding HasCurrentTrack, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                            </Grid>
+                        </controls:RoundedClipBorder>
+                        <TextBlock Text="{Binding MusicPlayerTrackTitle}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="1,7,1,0" />
+                        <TextBlock Text="{Binding MusicPlayerTrackArtist}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="1,1,1,0" />
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,6,0,0">
+                            <Button Width="32"
+                                    Height="30"
+                                    Padding="5"
+                                    Margin="0,0,6,0"
+                                    Style="{StaticResource SurfaceButtonStyle}"
+                                    Command="{Binding PlayPreviousMusicTrackCommand}"
+                                    ToolTip="{Binding [Home.MediaControl.Previous], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    AutomationProperties.Name="{Binding [Home.MediaControl.Previous], Source={x:Static loc:LocalizationManager.Instance}}">
+                                <Path Data="M 3,2 H 5 V 14 H 3 Z M 15,2 L 6,8 L 15,14 Z"
+                                      Fill="{DynamicResource TextPrimaryBrush}"
+                                      Width="14"
+                                      Height="14"
+                                      Stretch="Uniform" />
+                            </Button>
+                            <Button Width="38"
+                                    Height="30"
+                                    Padding="5"
+                                    Margin="0,0,6,0"
+                                    Style="{StaticResource SurfaceButtonStyle}"
+                                    Command="{Binding ToggleMusicPlaybackCommand}"
+                                    ToolTip="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    AutomationProperties.Name="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}">
+                                <Path Fill="{DynamicResource TextPrimaryBrush}"
+                                      Width="14"
+                                      Height="14"
+                                      Stretch="Uniform">
+                                    <Path.Style>
+                                        <Style TargetType="Path">
+                                            <Setter Property="Data" Value="M 3,2 L 14,8 L 3,14 Z" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMusicPlaying}" Value="True">
+                                                    <Setter Property="Data" Value="M 3,2 H 6 V 14 H 3 Z M 10,2 H 13 V 14 H 10 Z" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Button>
+                            <Button Width="32"
+                                    Height="30"
+                                    Padding="5"
+                                    Style="{StaticResource SurfaceButtonStyle}"
+                                    Command="{Binding PlayNextMusicTrackCommand}"
+                                    ToolTip="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    AutomationProperties.Name="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}">
+                                <Path Data="M 13,2 H 15 V 14 H 13 Z M 1,2 L 10,8 L 1,14 Z"
+                                      Fill="{DynamicResource TextPrimaryBrush}"
+                                      Width="14"
+                                      Height="14"
+                                      Stretch="Uniform" />
+                            </Button>
+                        </StackPanel>
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="38" />
+                                <ColumnDefinition Width="30" />
+                            </Grid.ColumnDefinitions>
+                            <Slider Style="{StaticResource MusicVolumeSliderStyle}"
+                                    Minimum="0"
+                                    Maximum="100"
+                                    SmallChange="1"
+                                    LargeChange="5"
+                                    Value="{Binding MusicVolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    IsEnabled="{Binding CanAdjustMusicVolume}"
+                                    VerticalAlignment="Center"
+                                    ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
+                                    AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
+                            <Border Grid.Column="1"
+                                    Width="36"
+                                    Height="26"
+                                    CornerRadius="7"
+                                    Background="{DynamicResource CardHoverBrush}"
+                                    BorderBrush="{DynamicResource CardBorderBrush}"
+                                    BorderThickness="1"
+                                    Margin="2,0,0,0">
+                                <TextBox Width="34"
+                                         Height="24"
+                                         MaxLength="3"
+                                         TextAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         Padding="1,0"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Text="{Binding MusicVolumePercent, Mode=OneWay}"
+                                         IsEnabled="{Binding CanAdjustMusicVolume}"
+                                         PreviewTextInput="MusicVolumePercent_PreviewTextInput"
+                                         LostFocus="MusicVolumePercent_LostFocus"
+                                         KeyDown="MusicVolumePercent_KeyDown"
+                                         DataObject.Pasting="MusicVolumePercent_Pasting"
+                                         ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
+                                         AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
+                            </Border>
+                            <Button Grid.Column="2"
+                                    Width="28"
+                                    Height="26"
+                                    Padding="4"
+                                    Margin="3,0,0,0"
+                                    Style="{StaticResource SurfaceButtonStyle}"
+                                    Command="{Binding ToggleMusicMuteCommand}"
+                                    IsEnabled="{Binding CanAdjustMusicVolume}"
+                                    ToolTip="{Binding MusicMuteTooltip}"
+                                    AutomationProperties.Name="{Binding MusicMuteTooltip}">
+                                <Grid>
+                                    <Path Data="M 2,7 H 5 L 10,3 V 13 L 5,9 H 2 Z M 12,6 A 3,3 0 0 1 12,10"
+                                          Stroke="{DynamicResource TextPrimaryBrush}"
+                                          StrokeThickness="1.2"
+                                          Width="16"
+                                          Height="16"
+                                          Stretch="Uniform" />
+                                    <Path Data="M 3,3 L 13,13"
+                                          Stroke="{DynamicResource AccentBrush}"
+                                          StrokeThickness="1.8"
+                                          Width="16"
+                                          Height="16"
+                                          Stretch="Uniform"
+                                          Visibility="Collapsed">
+                                        <Path.Style>
+                                            <Style TargetType="Path">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMusicMuted}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                </Grid>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Button Grid.Row="3"
                         Command="{Binding SelectPageCommand}"
                         CommandParameter="Settings"
                         Tag="{Binding IsSettingsSelected}"
@@ -162,24 +360,38 @@
                                    FontSize="13"
                                    Margin="0,5,0,0" />
                     </StackPanel>
-                    <Border HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            Padding="12,7"
-                            CornerRadius="14"
-                            Background="#14FFFFFF"
-                            BorderBrush="#20FFFFFF"
-                            BorderThickness="1">
+                    <StackPanel HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Orientation="Horizontal"
+                                Visibility="{Binding IsHome, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="{Binding [Home.ShortcutsHint], Source={x:Static loc:LocalizationManager.Instance}}"
                                    FontSize="10"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </Border>
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding HomeLayoutStatusText}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0" />
+                        <Button Content="{Binding HomeLayoutModeLabel}"
+                                Style="{StaticResource SurfaceButtonStyle}"
+                                Padding="10,6"
+                                Command="{Binding ToggleHomeEditModeCommand}" />
+                        <Button Content="{Binding [Home.Layout.Reset], Source={x:Static loc:LocalizationManager.Instance}}"
+                                Style="{StaticResource SurfaceButtonStyle}"
+                                Padding="10,6"
+                                Margin="6,0,0,0"
+                                Command="{Binding ResetHomeTileLayoutCommand}"
+                                Visibility="{Binding IsHomeEditMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </StackPanel>
                 </Grid>
 
                 <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <Grid>
-                        <ItemsControl ItemsSource="{Binding HomeTiles}"
+                        <ItemsControl ItemsSource="{Binding VisibleHomeTiles}"
                                       Visibility="{Binding IsHome, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -191,9 +403,17 @@
                                     <Grid Margin="0,0,12,12" Height="260">
                                         <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
-                                                Style="{StaticResource TileButtonStyle}"
                                                 HorizontalContentAlignment="Stretch"
                                                 VerticalContentAlignment="Stretch">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource TileButtonStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="*" />
@@ -305,114 +525,80 @@
                                                            FontSize="15" />
                                             </Grid>
                                         </Button>
-                                        <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                Padding="8,5"
-                                                HorizontalAlignment="Right"
-                                                VerticalAlignment="Bottom"
-                                                Margin="0,0,18,16">
-                                            <Button.Style>
-                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding Id}" Value="deezer" />
-                                                            <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="False" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </MultiDataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                            <TextBlock Text="{Binding [Home.MediaControl.Favorites], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                       FontSize="10" />
-                                        </Button>
-                                        <StackPanel HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Orientation="Horizontal"
-                                                    Margin="20,0,48,18"
-                                                    Panel.ZIndex="1">
-                                            <StackPanel.Style>
-                                                <Style TargetType="StackPanel">
+                                        <Border Background="#B5091113"
+                                                CornerRadius="18"
+                                                Panel.ZIndex="2"
+                                                IsHitTestVisible="False"
+                                                Visibility="Collapsed">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Id}" Value="deezer">
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding IsVisible}" Value="False" />
+                                                                <Condition Binding="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                            </MultiDataTrigger.Conditions>
                                                             <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
+                                                        </MultiDataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
-                                            </StackPanel.Style>
-                                            <Button Style="{StaticResource SurfaceButtonStyle}"
-                                                    Padding="10,6"
-                                                    Margin="0,0,8,0"
-                                                    Command="{Binding DataContext.ToggleMusicPlaybackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    ToolTip="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}">
-                                                <Path Data="M 3,2 H 7 V 14 H 3 Z M 11,2 H 15 V 14 H 11 Z"
-                                                      Fill="{DynamicResource TextPrimaryBrush}"
-                                                      Width="15"
-                                                      Height="15"
-                                                      Stretch="Uniform" />
-                                            </Button>
-                                            <Button Style="{StaticResource SurfaceButtonStyle}"
-                                                    Padding="10,6"
-                                                    Command="{Binding DataContext.PlayNextMusicTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    ToolTip="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}">
-                                                <Path Data="M 2,2 L 11,8 L 2,14 Z M 12,2 H 14 V 14 H 12 Z"
-                                                      Fill="{DynamicResource TextPrimaryBrush}"
-                                                      Width="15"
-                                                      Height="15"
-                                                      Stretch="Uniform" />
-                                            </Button>
-                                            <Path Data="M 2,7 H 5 L 9,4 V 14 L 5,11 H 2 Z M 12,7 A 3,3 0 0 1 12,11 M 14,5 A 6,6 0 0 1 14,13"
-                                                  Stroke="{DynamicResource TextPrimaryBrush}"
-                                                  StrokeThickness="1.4"
-                                                  Width="15"
-                                                  Height="15"
-                                                  Margin="9,0,4,0"
-                                                  VerticalAlignment="Center" />
-                                            <Slider Style="{StaticResource MusicVolumeSliderStyle}"
-                                                    Minimum="0"
-                                                    Maximum="100"
-                                                    SmallChange="1"
-                                                    LargeChange="5"
-                                                    Value="{Binding DataContext.MusicVolumePercent, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                    IsEnabled="{Binding DataContext.CanAdjustMusicVolume, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    Width="84"
-                                                    VerticalAlignment="Center"
-                                                    ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                    AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
-                                            <Border Width="42"
-                                                    Height="26"
-                                                    CornerRadius="8"
-                                                    Background="#18FFFFFF"
-                                                    BorderBrush="{DynamicResource CardBorderBrush}"
-                                                    BorderThickness="1"
-                                                    Margin="4,0,0,0">
-                                                <TextBox Width="40"
-                                                         Height="24"
-                                                         MaxLength="3"
-                                                         TextAlignment="Center"
-                                                         VerticalContentAlignment="Center"
-                                                         Padding="2,0"
-                                                         Background="Transparent"
-                                                         BorderThickness="0"
-                                                         Text="{Binding DataContext.MusicVolumePercent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
-                                                         IsEnabled="{Binding DataContext.CanAdjustMusicVolume, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                         PreviewTextInput="MusicVolumePercent_PreviewTextInput"
-                                                         LostFocus="MusicVolumePercent_LostFocus"
-                                                         KeyDown="MusicVolumePercent_KeyDown"
-                                                         DataObject.Pasting="MusicVolumePercent_Pasting"
-                                                         ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
-                                                         AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
-                                            </Border>
-                                            <TextBlock Text="%"
-                                                       FontSize="10"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding [Home.Layout.Hidden], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
-                                                       Margin="3,0,0,0" />
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <StackPanel HorizontalAlignment="Right"
+                                                    VerticalAlignment="Top"
+                                                    Orientation="Horizontal"
+                                                    Margin="0,10,10,0"
+                                                    Panel.ZIndex="3"
+                                                    Visibility="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button Content="↑"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,0"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.MoveHomeTileUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.MoveUp], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.MoveUp], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Content="↓"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,0"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.MoveHomeTileDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.MoveDown], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.MoveDown], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.ToggleHomeTileVisibilityCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding VisibilityTooltip}"
+                                                    AutomationProperties.Name="{Binding VisibilityTooltip}">
+                                                <TextBlock FontSize="14"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="−" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsVisible}" Value="False">
+                                                                    <Setter Property="Text" Value="+" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
