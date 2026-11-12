@@ -83,6 +83,9 @@
   <data name="Home.Layout.SaveFailed" xml:space="preserve"><value>Impossible d’enregistrer la disposition</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Commande envoyée au lecteur multimédia actif.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Impossible d’envoyer la commande multimédia.</value></data>
+  <data name="Home.Tile.GamesSummary" xml:space="preserve"><value>{0} jeux · {1} installés</value></data>
+  <data name="Home.Tile.AchievementsSummary" xml:space="preserve"><value>{0} sur {1} débloqués</value></data>
+  <data name="Home.Tile.ShortcutsSummary" xml:space="preserve"><value>{0} raccourcis</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Dernier jeu joué</value></data>
   <data name="Tile.LastGame.Description" xml:space="preserve"><value>Votre prochaine partie commence ici</value></data>
   <data name="Tile.Steam" xml:space="preserve"><value>Steam</value></data>

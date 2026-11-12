@@ -9,7 +9,7 @@ namespace Arkadia.App.Controls;
 
 public sealed class HomeTileGridPanel : WpfPanel
 {
-    private const int ColumnCount = 3;
+    private const int MaximumColumnCount = 3;
     private const double TileWidth = 260;
     private const double TileHeight = 260;
     private const double Gap = 12;
@@ -49,8 +49,9 @@ public sealed class HomeTileGridPanel : WpfPanel
     protected override WpfSize MeasureOverride(WpfSize availableSize)
     {
         var width = ResolveWidth(availableSize.Width);
-        var placements = CreatePlacements();
-        var cellWidth = Math.Max(0, (width - Gap * ColumnCount) / ColumnCount);
+        var columnCount = ResolveColumnCount(width);
+        var placements = CreatePlacements(columnCount);
+        var cellWidth = Math.Max(0, (width - Gap * (columnCount - 1)) / columnCount);
 
         foreach (var placement in placements)
         {
@@ -70,9 +71,10 @@ public sealed class HomeTileGridPanel : WpfPanel
     protected override WpfSize ArrangeOverride(WpfSize finalSize)
     {
         var width = ResolveWidth(finalSize.Width);
-        var cellWidth = Math.Max(0, (width - Gap * ColumnCount) / ColumnCount);
+        var columnCount = ResolveColumnCount(width);
+        var cellWidth = Math.Max(0, (width - Gap * (columnCount - 1)) / columnCount);
 
-        foreach (var placement in CreatePlacements())
+        foreach (var placement in CreatePlacements(columnCount))
         {
             var child = Children[ParseIndex(placement.Id)];
             child.Arrange(new Rect(
@@ -85,21 +87,29 @@ public sealed class HomeTileGridPanel : WpfPanel
         return finalSize;
     }
 
-    private IReadOnlyList<HomeTileGridPosition> CreatePlacements()
+    private IReadOnlyList<HomeTileGridPosition> CreatePlacements(int columnCount)
     {
         var items = Children
             .Cast<UIElement>()
             .Select((child, index) => new HomeTileGridItem(
                 index.ToString(CultureInfo.InvariantCulture),
-                GetColumnSpan(child),
+                Math.Min(GetColumnSpan(child), columnCount),
                 GetRowSpan(child)))
             .ToArray();
-        return HomeTileGridLayout.Arrange(items, ColumnCount);
+        return HomeTileGridLayout.Arrange(items, columnCount);
     }
 
     private static int ParseIndex(string id) =>
         int.Parse(id, NumberStyles.None, CultureInfo.InvariantCulture);
 
+    private static int ResolveColumnCount(double width)
+    {
+        var fittingColumns = (int)Math.Floor((width + Gap) / (TileWidth + Gap));
+        return Math.Clamp(fittingColumns, 1, MaximumColumnCount);
+    }
+
     private static double ResolveWidth(double width) =>
-        double.IsInfinity(width) ? ColumnCount * (TileWidth + Gap) : width;
+        double.IsNaN(width) || double.IsInfinity(width)
+            ? MaximumColumnCount * TileWidth + (MaximumColumnCount - 1) * Gap
+            : Math.Max(0, width);
 }

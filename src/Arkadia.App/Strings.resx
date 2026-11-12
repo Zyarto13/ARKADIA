@@ -83,6 +83,9 @@
   <data name="Home.Layout.SaveFailed" xml:space="preserve"><value>Could not save layout</value></data>
   <data name="Home.MediaControl.Sent" xml:space="preserve"><value>Media command sent to the active player.</value></data>
   <data name="Home.MediaControl.Failed" xml:space="preserve"><value>Could not send the media command.</value></data>
+  <data name="Home.Tile.GamesSummary" xml:space="preserve"><value>{0} games · {1} installed</value></data>
+  <data name="Home.Tile.AchievementsSummary" xml:space="preserve"><value>{0} of {1} unlocked</value></data>
+  <data name="Home.Tile.ShortcutsSummary" xml:space="preserve"><value>{0} shortcuts</value></data>
   <data name="Tile.LastGame" xml:space="preserve"><value>Last played</value></data>
   <data name="Tile.LastGame.Description" xml:space="preserve"><value>Your next session starts here</value></data>
   <data name="Tile.Steam" xml:space="preserve"><value>Steam</value></data>

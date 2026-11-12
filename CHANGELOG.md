@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.20
+
+- Made the home dashboard and game library adapt to narrower window widths without forcing overflowing columns.
+- Kept the complete album cover visible in the music tile instead of cropping it to fill the card.
+- Added live game-art previews and localized library, achievement, and shortcut summaries to relevant home tiles.
+- Improved game-card badge and playtime truncation to prevent collisions at smaller widths.
+
 ## 1.0.19
 
 - Restored music controls to the home music tile, with playback-aware play/pause icon and tooltip.

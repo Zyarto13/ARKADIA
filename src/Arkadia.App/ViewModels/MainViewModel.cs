@@ -519,6 +519,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(HasAchievements));
                 OnPropertyChanged(nameof(UnlockedAchievementCount));
                 OnPropertyChanged(nameof(AchievementProgress));
+                RefreshHomeTileContent();
                 AchievementsStatusText = value is null || value.ProviderId == "steam"
                     ? string.Empty
                     : LocalizationManager.Instance["Achievements.UnsupportedProvider"];
@@ -1862,6 +1863,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _failedGameProviders = failedProviders;
             _hasScannedGames = true;
             OnPropertyChanged(nameof(SteamGames));
+            RefreshHomeTileContent();
             if (SelectedAchievementGame is null || !mergedGames.Any(game => game == SelectedAchievementGame))
             {
                 SelectedAchievementGame = Games.FirstOrDefault(game => game.ProviderId == "steam");
@@ -2049,6 +2051,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(HasAchievements));
             OnPropertyChanged(nameof(UnlockedAchievementCount));
             OnPropertyChanged(nameof(AchievementProgress));
+            RefreshHomeTileContent();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -2415,6 +2418,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(MusicMuteTooltip));
         UpdateGamesStatusText();
         RefreshFilteredGames();
+        RefreshHomeTileContent();
     }
 
     private bool CanRefreshGames() => !IsLoadingGames;
@@ -2430,6 +2434,67 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(HasShortcuts));
         OnPropertyChanged(nameof(IsShortcutsEmpty));
+        RefreshHomeTileContent();
+    }
+
+    private void RefreshHomeTileContent()
+    {
+        if (HomeTiles.Count == 0)
+        {
+            return;
+        }
+
+        var steamGames = _hasScannedGames
+            ? OrderGames(Games.Where(game => game.ProviderId == "steam")).Take(3).ToArray()
+            : [];
+        var steamGameCount = _hasScannedGames
+            ? Games.Count(game => game.ProviderId == "steam")
+            : 0;
+        var steamInstalledCount = _hasScannedGames
+            ? Games.Count(game => game.ProviderId == "steam" && game.IsInstalled)
+            : 0;
+        HomeTiles.First(tile => tile.Id == "steam").SetContent(
+            _hasScannedGames
+                ? string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Home.Tile.GamesSummary"],
+                    steamGameCount,
+                    steamInstalledCount)
+                : string.Empty,
+            previewGames: steamGames);
+
+        var epicGames = _hasScannedGames
+            ? OrderGames(Games.Where(game => game.ProviderId == "epic")).ToArray()
+            : [];
+        var epicInstalledCount = epicGames.Count(game => game.IsInstalled);
+        HomeTiles.First(tile => tile.Id == "epic").SetContent(
+            _hasScannedGames
+                ? string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Home.Tile.GamesSummary"],
+                    epicGames.Length,
+                    epicInstalledCount)
+                : string.Empty,
+            previewItems: epicGames.Take(3).Select(game => game.Title).ToArray());
+
+        HomeTiles.First(tile => tile.Id == "achievement").SetContent(
+            Achievements.Count > 0
+                ? string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Home.Tile.AchievementsSummary"],
+                    UnlockedAchievementCount,
+                    Achievements.Count)
+                : string.Empty,
+            previewItems: Achievements.Take(3).Select(achievement => achievement.Name).ToArray());
+
+        HomeTiles.First(tile => tile.Id == "shortcuts").SetContent(
+            Shortcuts.Count > 0
+                ? string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Home.Tile.ShortcutsSummary"],
+                    Shortcuts.Count)
+                : string.Empty,
+            previewItems: Shortcuts.Take(3).Select(shortcut => shortcut.Name).ToArray());
     }
 
     private bool CanLoadAchievements() =>

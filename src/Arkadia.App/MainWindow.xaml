@@ -461,7 +461,9 @@
                                                         </Style>
                                                     </controls:RoundedClipBorder.Style>
                                                     <Image Source="{Binding DataContext.CurrentTrackArtwork, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                           Stretch="UniformToFill"
+                                                           Stretch="Uniform"
+                                                           HorizontalAlignment="Right"
+                                                           VerticalAlignment="Center"
                                                            RenderOptions.BitmapScalingMode="HighQuality"
                                                            Opacity="0.88" />
                                                 </controls:RoundedClipBorder>
@@ -606,10 +608,92 @@
                                                                     </MultiDataTrigger.Conditions>
                                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                                 </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding HasTileContent}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <StackPanel Grid.Row="1"
+                                                            Margin="0,0,20,0">
+                                                    <StackPanel.Style>
+                                                        <Style TargetType="StackPanel">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasTileContent}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </StackPanel.Style>
+                                                    <TextBlock Text="{Binding SummaryText}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <ItemsControl ItemsSource="{Binding PreviewGames}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal" />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <controls:RoundedClipBorder Width="62"
+                                                                                            Height="50"
+                                                                                            Margin="0,6,6,0"
+                                                                                            CornerRadius="7"
+                                                                                            ClipToBounds="True">
+                                                                    <Grid Background="#FF202847">
+                                                                        <Image Loaded="HomeTileGameArtwork_Loaded"
+                                                                               Stretch="UniformToFill"
+                                                                               Visibility="Collapsed" />
+                                                                        <Border VerticalAlignment="Bottom"
+                                                                                Height="23">
+                                                                            <Border.Background>
+                                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                                    <GradientStop Color="#00101824" Offset="0" />
+                                                                                    <GradientStop Color="#E6101824" Offset="1" />
+                                                                                </LinearGradientBrush>
+                                                                            </Border.Background>
+                                                                        </Border>
+                                                                        <TextBlock Text="{Binding Title}"
+                                                                                   VerticalAlignment="Bottom"
+                                                                                   Margin="4,0,4,3"
+                                                                                   Foreground="White"
+                                                                                   FontSize="8"
+                                                                                   FontWeight="SemiBold"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                    </Grid>
+                                                                </controls:RoundedClipBorder>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <ItemsControl ItemsSource="{Binding PreviewItems}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal" />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#241FFFFFFF"
+                                                                        BorderBrush="#24FFFFFF"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="8"
+                                                                        Padding="7,4"
+                                                                        Margin="0,6,6,0"
+                                                                        MaxWidth="96">
+                                                                    <TextBlock Text="{Binding}"
+                                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                                               FontSize="9"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
                                                 <StackPanel Grid.Row="1"
                                                             HorizontalAlignment="Stretch">
                                                     <StackPanel.Style>
@@ -1505,7 +1589,7 @@
                                                   Visibility="{Binding HasFilteredGames, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <UniformGrid Columns="3" />
+                                                <WrapPanel />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
@@ -1513,8 +1597,10 @@
                                                 <Button Style="{StaticResource GameCardButtonStyle}"
                                                         Command="{Binding DataContext.LaunchGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
+                                                        Width="300"
                                                         Height="196"
                                                         Margin="0,0,12,12"
+                                                        HorizontalAlignment="Left"
                                                         HorizontalContentAlignment="Stretch"
                                                         VerticalContentAlignment="Stretch"
                                                         AutomationProperties.Name="{Binding Title}">
@@ -1581,16 +1667,19 @@
                                                                 </LinearGradientBrush>
                                                             </Border.Background>
                                                         </Border>
-                                                        <Grid Margin="15,13">
+                                                        <Grid Margin="18,16">
                                                             <Border HorizontalAlignment="Left"
                                                                     VerticalAlignment="Top"
                                                                     Background="#A8121720"
                                                                     CornerRadius="10"
-                                                                    Padding="8,4">
+                                                                    Padding="8,4"
+                                                                    MaxWidth="132"
+                                                                    ToolTip="{Binding ProviderDisplayName}">
                                                                 <TextBlock Text="{Binding ProviderDisplayName}"
                                                                            Foreground="#EFFFFFFF"
                                                                            FontSize="10"
-                                                                           FontWeight="Medium" />
+                                                                           FontWeight="Medium"
+                                                                           TextTrimming="CharacterEllipsis" />
                                                             </Border>
                                                             <Border HorizontalAlignment="Right"
                                                                     VerticalAlignment="Top"
@@ -1639,7 +1728,9 @@
                                                                         <TextBlock Text="{Binding PlaytimeText}"
                                                                                    Foreground="#CFFFFFFF"
                                                                                    FontSize="10"
-                                                                                   VerticalAlignment="Center" />
+                                                                                   VerticalAlignment="Center"
+                                                                                   MaxWidth="92"
+                                                                                   TextTrimming="CharacterEllipsis" />
                                                                     </Border>
                                                                     <Border DockPanel.Dock="Right"
                                                                             Background="#64101824"
@@ -1649,7 +1740,9 @@
                                                                         <TextBlock Text="{Binding [Games.PlaytimeUnavailable], Source={x:Static loc:LocalizationManager.Instance}}"
                                                                                    Foreground="#CFFFFFFF"
                                                                                    FontSize="10"
-                                                                                   VerticalAlignment="Center" />
+                                                                                   VerticalAlignment="Center"
+                                                                                   MaxWidth="92"
+                                                                                   TextTrimming="CharacterEllipsis" />
                                                                     </Border>
                                                                 </DockPanel>
                                                             </StackPanel>

@@ -1,6 +1,7 @@
 using Arkadia.App.Localization;
 using Arkadia.App.Icons;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Arkadia.Core.Models;
 using System.Windows.Media;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
@@ -18,6 +19,9 @@ public sealed class HomeTileViewModel : ObservableObject
     private bool _isVisible = true;
     private int _columnSpan = 1;
     private int _rowSpan = 1;
+    private string _summaryText = string.Empty;
+    private IReadOnlyList<string> _previewItems = [];
+    private IReadOnlyList<GameEntry> _previewGames = [];
 
     public HomeTileViewModel(
         string id,
@@ -90,6 +94,13 @@ public sealed class HomeTileViewModel : ObservableObject
     public string? NavigationKey { get; }
     public bool IsMusicTile => Id is "spotify" or "deezer" or "youtubemusic";
     public bool IsSystemTile => Id == "system";
+    public string SummaryText => _summaryText;
+    public IReadOnlyList<string> PreviewItems => _previewItems;
+    public IReadOnlyList<GameEntry> PreviewGames => _previewGames;
+    public bool HasTileContent =>
+        !string.IsNullOrWhiteSpace(SummaryText)
+        || PreviewItems.Count > 0
+        || PreviewGames.Count > 0;
     public Geometry? BrandIcon => IconCatalog.ForBrand(Id);
     public bool HasBrandIcon => Id is "spotify" or "deezer" or "youtubemusic" or "discord" or "steam" or "epic" or "curseforge" or "minecraft";
     public Brush BrandColor => Id switch
@@ -128,5 +139,19 @@ public sealed class HomeTileViewModel : ObservableObject
         OnPropertyChanged(nameof(TileIcon));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(Description));
+    }
+
+    public void SetContent(
+        string summaryText,
+        IReadOnlyList<string>? previewItems = null,
+        IReadOnlyList<GameEntry>? previewGames = null)
+    {
+        _summaryText = summaryText;
+        _previewItems = previewItems ?? [];
+        _previewGames = previewGames ?? [];
+        OnPropertyChanged(nameof(SummaryText));
+        OnPropertyChanged(nameof(PreviewItems));
+        OnPropertyChanged(nameof(PreviewGames));
+        OnPropertyChanged(nameof(HasTileContent));
     }
 }

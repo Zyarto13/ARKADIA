@@ -75,6 +75,23 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void HomeTileGameArtwork_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Image image || image.DataContext is not GameEntry game)
+        {
+            return;
+        }
+
+        var artwork = await _gameArtworkService.LoadArtworkAsync(game);
+        if (!image.IsLoaded)
+        {
+            return;
+        }
+
+        image.Source = artwork;
+        image.Visibility = artwork is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private async void Appearance_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_isInitializingAppearance && DataContext is MainViewModel viewModel)
