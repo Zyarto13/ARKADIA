@@ -12,7 +12,8 @@ public sealed record AppSettings(
     string MusicService = "Spotify",
     IReadOnlyList<AppShortcut>? Shortcuts = null,
     IReadOnlyList<AudioVolumeProfile>? AudioProfiles = null,
-    IReadOnlyList<HomeTileLayoutEntry>? HomeTiles = null)
+    IReadOnlyList<HomeTileLayoutEntry>? HomeTiles = null,
+    IReadOnlyList<ManualGameDefinition>? ManualGames = null)
 {
     public static AppSettings Default { get; } = new(
         "Blue",

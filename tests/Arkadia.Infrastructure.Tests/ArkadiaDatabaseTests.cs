@@ -1,6 +1,7 @@
 using System.IO;
 using System.Globalization;
 using Arkadia.Infrastructure.Storage;
+using Dapper;
 
 namespace Arkadia.Infrastructure.Tests;
 
@@ -56,6 +57,47 @@ public sealed class ArkadiaDatabaseTests
             var versionRows = await versionCommand.ExecuteScalarAsync();
 
             Assert.Equal(1L, Convert.ToInt64(versionRows, CultureInfo.InvariantCulture));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DailyBackupCanRestoreCorruptedDatabase()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"arkadia-db-tests-{Guid.NewGuid():N}");
+        var databasePath = Path.Combine(directory, "arkadia.db");
+        var database = new ArkadiaDatabase(databasePath);
+
+        try
+        {
+            await database.InitializeAsync(CancellationToken.None);
+            await using (var connection = await database.OpenConnectionAsync(CancellationToken.None))
+            {
+                await connection.ExecuteAsync(
+                    "INSERT INTO accounts(provider, status) VALUES ('steam', 'connected');");
+            }
+
+            await database.CreateDailyBackupAsync(CancellationToken.None);
+            Assert.Single(Directory.GetFiles(Path.Combine(directory, "backups"), "arkadia-*.db"));
+
+            File.WriteAllBytes(databasePath, [0x00, 0x01, 0x02, 0x03]);
+            File.Delete($"{databasePath}-wal");
+            File.Delete($"{databasePath}-shm");
+
+            Assert.True(await database.RestoreLatestBackupIfCorruptedAsync(CancellationToken.None));
+            Assert.True(await database.QuickCheckAsync(CancellationToken.None));
+            await using (var restoredConnection = await database.OpenConnectionAsync(CancellationToken.None))
+            {
+                var status = await restoredConnection.ExecuteScalarAsync<string>(
+                    "SELECT status FROM accounts WHERE provider = 'steam';");
+                Assert.Equal("connected", status);
+            }
         }
         finally
         {

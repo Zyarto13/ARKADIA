@@ -175,8 +175,8 @@
                                     Margin="0,0,6,0"
                                     Style="{StaticResource SurfaceButtonStyle}"
                                     Command="{Binding ToggleMusicPlaybackCommand}"
-                                    ToolTip="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}"
-                                    AutomationProperties.Name="{Binding [Home.MediaControl.Pause], Source={x:Static loc:LocalizationManager.Instance}}">
+                                    ToolTip="{Binding MusicPlaybackTooltip}"
+                                    AutomationProperties.Name="{Binding MusicPlaybackTooltip}">
                                 <Path Fill="{DynamicResource TextPrimaryBrush}"
                                       Width="14"
                                       Height="14"
@@ -330,8 +330,18 @@
                             Margin="0,0,22,0">
                     <Ellipse Width="7"
                              Height="7"
-                             Fill="{DynamicResource SuccessBrush}"
-                             Margin="0,0,8,0" />
+                             Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                        <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
                     <TextBlock Text="{Binding ConnectivityText}"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                FontSize="11"
@@ -432,26 +442,48 @@
                                                     <RowDefinition Height="*" />
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
-                                                <Image Source="{Binding DataContext.CurrentTrackArtwork, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                       Stretch="Uniform"
-                                                       RenderOptions.BitmapScalingMode="HighQuality"
-                                                       IsHitTestVisible="False"
-                                                       Opacity="0.78">
-                                                    <Image.Style>
-                                                        <Style TargetType="Image">
+                                                <controls:RoundedClipBorder Grid.RowSpan="2"
+                                                                            CornerRadius="18"
+                                                                            ClipToBounds="True"
+                                                                            IsHitTestVisible="False">
+                                                    <controls:RoundedClipBorder.Style>
+                                                        <Style TargetType="controls:RoundedClipBorder">
                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
                                                                 <MultiDataTrigger>
                                                                     <MultiDataTrigger.Conditions>
-                                                                        <Condition Binding="{Binding Id}" Value="deezer" />
+                                                                        <Condition Binding="{Binding IsMusicTile}" Value="True" />
                                                                         <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
                                                                     </MultiDataTrigger.Conditions>
                                                                     <Setter Property="Visibility" Value="Visible" />
                                                                 </MultiDataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
-                                                    </Image.Style>
-                                                </Image>
+                                                    </controls:RoundedClipBorder.Style>
+                                                    <Image Source="{Binding DataContext.CurrentTrackArtwork, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                           Stretch="UniformToFill"
+                                                           RenderOptions.BitmapScalingMode="HighQuality"
+                                                           Opacity="0.88" />
+                                                </controls:RoundedClipBorder>
+                                                <Border Grid.RowSpan="2"
+                                                        CornerRadius="18"
+                                                        Background="#59070B12"
+                                                        IsHitTestVisible="False">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsMusicTile}" Value="True" />
+                                                                        <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
                                                 <Viewbox Width="190"
                                                          Height="190"
                                                          HorizontalAlignment="Right"
@@ -459,6 +491,19 @@
                                                          Margin="0,0,-12,-12"
                                                          IsHitTestVisible="False"
                                                          OpacityMask="{StaticResource DiagonalLogoFade}">
+                                                    <Viewbox.Style>
+                                                        <Style TargetType="Viewbox">
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsMusicTile}" Value="True" />
+                                                                        <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Viewbox.Style>
                                                     <Path Data="{Binding TileIcon}"
                                                           Fill="#BFFFFFFF"
                                                           Stretch="Uniform"
@@ -495,7 +540,7 @@
                                                                     <Style.Triggers>
                                                                         <MultiDataTrigger>
                                                                             <MultiDataTrigger.Conditions>
-                                                                                <Condition Binding="{Binding Id}" Value="deezer" />
+                                                                                <Condition Binding="{Binding IsMusicTile}" Value="True" />
                                                                                 <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
                                                                             </MultiDataTrigger.Conditions>
                                                                             <Setter Property="Visibility" Value="Collapsed" />
@@ -511,7 +556,7 @@
                                                                     <Style.Triggers>
                                                                         <MultiDataTrigger>
                                                                             <MultiDataTrigger.Conditions>
-                                                                                <Condition Binding="{Binding Id}" Value="deezer" />
+                                                                                <Condition Binding="{Binding IsMusicTile}" Value="True" />
                                                                                 <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
                                                                             </MultiDataTrigger.Conditions>
                                                                             <Setter Property="Visibility" Value="Visible" />
@@ -530,12 +575,108 @@
                                                                        TextTrimming="CharacterEllipsis" />
                                                         </StackPanel>
                                                     </Grid>
+                                                    <TextBlock Text="{Binding DataContext.SystemMetricsText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               FontSize="11"
+                                                               Margin="0,5,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSystemTile}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </StackPanel>
                                                 <TextBlock Grid.Row="1"
                                                            Text="↗"
                                                            HorizontalAlignment="Right"
                                                            Foreground="{DynamicResource TextSecondaryBrush}"
-                                                           FontSize="15" />
+                                                           FontSize="15">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsMusicTile}" Value="True" />
+                                                                        <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <StackPanel Grid.Row="1"
+                                                            HorizontalAlignment="Stretch">
+                                                    <StackPanel.Style>
+                                                        <Style TargetType="StackPanel">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsMusicTile}" Value="True" />
+                                                                        <Condition Binding="{Binding DataContext.HasCurrentTrack, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </StackPanel.Style>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                        <Button Width="28" Height="24" Padding="4" Margin="0,0,4,0"
+                                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                                Command="{Binding DataContext.PlayPreviousMusicTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                ToolTip="{Binding [Home.MediaControl.Previous], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                AutomationProperties.Name="{Binding [Home.MediaControl.Previous], Source={x:Static loc:LocalizationManager.Instance}}">
+                                                            <Path Data="M 3,2 H 5 V 14 H 3 Z M 15,2 L 6,8 L 15,14 Z"
+                                                                  Fill="{DynamicResource TextPrimaryBrush}" Width="13" Height="13" Stretch="Uniform" />
+                                                        </Button>
+                                                        <Button Width="34" Height="24" Padding="4" Margin="0,0,4,0"
+                                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                                Command="{Binding DataContext.ToggleMusicPlaybackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                ToolTip="{Binding DataContext.MusicPlaybackTooltip, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                AutomationProperties.Name="{Binding DataContext.MusicPlaybackTooltip, RelativeSource={RelativeSource AncestorType=Window}}">
+                                                            <Path Fill="{DynamicResource TextPrimaryBrush}" Width="13" Height="13" Stretch="Uniform">
+                                                                <Path.Style>
+                                                                    <Style TargetType="Path">
+                                                                        <Setter Property="Data" Value="M 3,2 L 14,8 L 3,14 Z" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding DataContext.IsMusicPlaying, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                                <Setter Property="Data" Value="M 3,2 H 6 V 14 H 3 Z M 10,2 H 13 V 14 H 10 Z" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Path.Style>
+                                                            </Path>
+                                                        </Button>
+                                                        <Button Width="28" Height="24" Padding="4"
+                                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                                Command="{Binding DataContext.PlayNextMusicTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                ToolTip="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                                AutomationProperties.Name="{Binding [Home.MediaControl.Next], Source={x:Static loc:LocalizationManager.Instance}}">
+                                                            <Path Data="M 13,2 H 15 V 14 H 13 Z M 1,2 L 10,8 L 1,14 Z"
+                                                                  Fill="{DynamicResource TextPrimaryBrush}" Width="13" Height="13" Stretch="Uniform" />
+                                                        </Button>
+                                                        <Button Width="28" Height="24" Padding="4" Margin="4,0,0,0"
+                                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                                Command="{Binding DataContext.ToggleMusicMuteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                IsEnabled="{Binding DataContext.CanAdjustMusicVolume, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                ToolTip="{Binding DataContext.MusicMuteTooltip, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                AutomationProperties.Name="{Binding DataContext.MusicMuteTooltip, RelativeSource={RelativeSource AncestorType=Window}}">
+                                                            <TextBlock Text="◖" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <Slider Style="{StaticResource MusicVolumeSliderStyle}"
+                                                            Minimum="0" Maximum="100" SmallChange="1" LargeChange="5"
+                                                            Value="{Binding DataContext.MusicVolumePercent, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            IsEnabled="{Binding DataContext.CanAdjustMusicVolume, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            ToolTip="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            AutomationProperties.Name="{Binding [Home.MediaControl.Volume], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                                </StackPanel>
                                             </Grid>
                                         </Button>
                                         <Border Background="#B5091113"
@@ -1244,6 +1385,15 @@
                                                    VerticalAlignment="Center"
                                                    DockPanel.Dock="Left" />
                                         <Button Style="{StaticResource SurfaceButtonStyle}"
+                                                Click="AddManualGame_Click"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"
+                                                ToolTip="{Binding [Games.AddManual], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                AutomationProperties.Name="{Binding [Games.AddManual], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                DockPanel.Dock="Right">
+                                            <TextBlock Text="{Binding [Games.AddManual], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                        </Button>
+                                        <Button Style="{StaticResource SurfaceButtonStyle}"
                                                 Command="{Binding SortGamesByPlaytimeCommand}"
                                                 Padding="12,8"
                                                 Margin="0,0,8,0"
@@ -1336,6 +1486,7 @@
                                             <ComboBoxItem Content="{Binding [Games.Provider.All], Source={x:Static loc:LocalizationManager.Instance}}" Tag="all" />
                                             <ComboBoxItem Content="Steam" Tag="steam" />
                                             <ComboBoxItem Content="Epic Games" Tag="epic" />
+                                            <ComboBoxItem Content="{Binding [Games.Provider.Manual], Source={x:Static loc:LocalizationManager.Instance}}" Tag="manual" />
                                         </ComboBox>
                                     </Grid>
                                     <TextBlock Text="{Binding FilteredGamesStatusText}"

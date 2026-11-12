@@ -48,10 +48,16 @@
   <data name="Home.ShortcutsHint" xml:space="preserve"><value>CTRL 1–5  /  RACCOURCIS</value></data>
   <data name="Home.Empty" xml:space="preserve"><value>Cette page sera disponible au fur et à mesure de l’activation de ses fonctionnalités.</value></data>
   <data name="Home.Offline" xml:space="preserve"><value>Hors ligne</value></data>
+  <data name="Home.Online" xml:space="preserve"><value>En ligne</value></data>
   <data name="Home.Ready" xml:space="preserve"><value>Prêt sur ce PC</value></data>
+  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU —</value></data>
+  <data name="Database.Recovered" xml:space="preserve"><value>ARKADIA a restauré les données locales depuis la dernière sauvegarde valide.</value></data>
+  <data name="Database.BackupFailed" xml:space="preserve"><value>ARKADIA n’a pas pu créer la sauvegarde du jour. Consultez les journaux de l’application.</value></data>
+  <data name="Database.RecoveryFailed" xml:space="preserve"><value>La base locale d’ARKADIA est endommagée et aucune sauvegarde valide n’est disponible. L’application ne peut pas continuer sans risque. Consultez les journaux.</value></data>
   <data name="Home.LaunchUnavailable" xml:space="preserve"><value>Cette fonctionnalité n’est pas encore disponible.</value></data>
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Impossible d’ouvrir cette application. Vérifiez qu’elle est installée.</value></data>
-  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Lire ou mettre la musique en pause</value></data>
+  <data name="Home.MediaControl.Play" xml:space="preserve"><value>Lire la musique</value></data>
+  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Mettre la musique en pause</value></data>
   <data name="Home.MediaControl.Previous" xml:space="preserve"><value>Lire le titre précédent</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Lire le titre suivant</value></data>
   <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Volume de la musique (0-100)</value></data>
@@ -138,6 +144,14 @@
   <data name="Tray.HiddenNotice" xml:space="preserve"><value>ARKADIA continue de fonctionner dans la zone de notification.</value></data>
   <data name="Games.Subtitle" xml:space="preserve"><value>Jeux installés détectés sur ce PC.</value></data>
   <data name="Games.Refresh" xml:space="preserve"><value>Relancer la recherche</value></data>
+  <data name="Games.AddManual" xml:space="preserve"><value>Ajouter un jeu</value></data>
+  <data name="Games.SelectExecutable" xml:space="preserve"><value>Sélectionner l’exécutable ou le raccourci du jeu</value></data>
+  <data name="Games.ExecutableFilter" xml:space="preserve"><value>Exécutable ou raccourci (*.exe;*.lnk)|*.exe;*.lnk</value></data>
+  <data name="Games.Provider.Manual" xml:space="preserve"><value>Manuel</value></data>
+  <data name="Games.ManualInvalid" xml:space="preserve"><value>Sélectionnez un fichier .exe ou .lnk existant.</value></data>
+  <data name="Games.ManualDuplicate" xml:space="preserve"><value>Ce jeu est déjà dans votre bibliothèque.</value></data>
+  <data name="Games.ManualAdded" xml:space="preserve"><value>Jeu ajouté à votre bibliothèque.</value></data>
+  <data name="Games.ManualSaveFailed" xml:space="preserve"><value>Impossible d’enregistrer ce jeu.</value></data>
   <data name="Games.SortPlaytime" xml:space="preserve"><value>Trier par temps de jeu ↓</value></data>
   <data name="Games.Search" xml:space="preserve"><value>Rechercher un jeu installé</value></data>
   <data name="Games.FilterProvider" xml:space="preserve"><value>Filtrer par plateforme</value></data>

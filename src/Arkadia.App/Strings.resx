@@ -48,10 +48,16 @@
   <data name="Home.ShortcutsHint" xml:space="preserve"><value>CTRL 1–5  /  SHORTCUTS</value></data>
   <data name="Home.Empty" xml:space="preserve"><value>This page will be available as its features are brought online.</value></data>
   <data name="Home.Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Home.Online" xml:space="preserve"><value>Online</value></data>
   <data name="Home.Ready" xml:space="preserve"><value>Ready on this PC</value></data>
+  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU —</value></data>
+  <data name="Database.Recovered" xml:space="preserve"><value>ARKADIA restored its local data from the latest valid backup.</value></data>
+  <data name="Database.BackupFailed" xml:space="preserve"><value>ARKADIA could not create today's database backup. Check the application logs.</value></data>
+  <data name="Database.RecoveryFailed" xml:space="preserve"><value>ARKADIA's local database is damaged and no valid backup is available. The app cannot safely continue. Check the application logs.</value></data>
   <data name="Home.LaunchUnavailable" xml:space="preserve"><value>This item is not available yet.</value></data>
   <data name="Home.LaunchFailed" xml:space="preserve"><value>Could not open this application. Check that it is installed.</value></data>
-  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Play or pause music</value></data>
+  <data name="Home.MediaControl.Play" xml:space="preserve"><value>Play music</value></data>
+  <data name="Home.MediaControl.Pause" xml:space="preserve"><value>Pause music</value></data>
   <data name="Home.MediaControl.Previous" xml:space="preserve"><value>Play previous track</value></data>
   <data name="Home.MediaControl.Next" xml:space="preserve"><value>Play next track</value></data>
   <data name="Home.MediaControl.Volume" xml:space="preserve"><value>Music volume (0-100)</value></data>
@@ -138,6 +144,14 @@
   <data name="Tray.HiddenNotice" xml:space="preserve"><value>ARKADIA is still running in the notification area.</value></data>
   <data name="Games.Subtitle" xml:space="preserve"><value>Installed games discovered on this PC.</value></data>
   <data name="Games.Refresh" xml:space="preserve"><value>Scan again</value></data>
+  <data name="Games.AddManual" xml:space="preserve"><value>Add a game</value></data>
+  <data name="Games.SelectExecutable" xml:space="preserve"><value>Select a game executable or shortcut</value></data>
+  <data name="Games.ExecutableFilter" xml:space="preserve"><value>Game executable or shortcut (*.exe;*.lnk)|*.exe;*.lnk</value></data>
+  <data name="Games.Provider.Manual" xml:space="preserve"><value>Manual</value></data>
+  <data name="Games.ManualInvalid" xml:space="preserve"><value>Select an existing .exe or .lnk file.</value></data>
+  <data name="Games.ManualDuplicate" xml:space="preserve"><value>This game is already in your library.</value></data>
+  <data name="Games.ManualAdded" xml:space="preserve"><value>Game added to your library.</value></data>
+  <data name="Games.ManualSaveFailed" xml:space="preserve"><value>Could not save this game.</value></data>
   <data name="Games.SortPlaytime" xml:space="preserve"><value>Sort by playtime ↓</value></data>
   <data name="Games.Search" xml:space="preserve"><value>Search installed games</value></data>
   <data name="Games.FilterProvider" xml:space="preserve"><value>Filter by platform</value></data>

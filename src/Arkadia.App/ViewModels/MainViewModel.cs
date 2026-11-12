@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.ComponentModel;
@@ -53,9 +54,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly WindowsAudioDeviceNotificationService _audioDeviceNotificationService = new();
+    private readonly WindowsSystemMetricsService _systemMetricsService = new();
     private readonly System.Threading.Timer _clockTimer;
     private readonly System.Threading.Timer _mediaSessionTimer;
     private readonly System.Threading.Timer _audioMeterTimer;
+    private readonly System.Threading.Timer _systemMetricsTimer;
     private readonly string _currentAppVersion;
     private string _gameSearchQuery = string.Empty;
     private string _selectedGameProvider = GameLibraryFilter.AllProviders;
@@ -65,6 +68,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _launchMessage = string.Empty;
     private string _comingSoonText = string.Empty;
     private string _connectivityText = string.Empty;
+    private bool _isOnline;
+    private double? _cpuUsagePercent;
+    private double _memoryUsagePercent;
+    private volatile bool _isApplicationVisible;
     private bool _isSettingsSelected;
     private bool _isHomeEditMode;
     private string _homeLayoutStatusText = string.Empty;
@@ -99,6 +106,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? _currentTrackSourceAppUserModelId;
     private BitmapImage? _currentTrackArtwork;
     private string _steamApiKey = string.Empty;
+    private IReadOnlyList<ManualGameDefinition> _manualGames = [];
     private string _achievementsStatusText = string.Empty;
     private GameEntry? _selectedAchievementGame;
     private bool _isLoadingAchievements;
@@ -131,6 +139,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _themeService = themeService;
         _currentAppVersion = GitHubUpdateService.CurrentVersion.ToString(3);
         _synchronizationContext = SynchronizationContext.Current;
+        _isOnline = NetworkInterface.GetIsNetworkAvailable();
         NavigationItems =
         [
             new("Home", "Navigation.Home"),
@@ -170,8 +179,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _clockTimer = new System.Threading.Timer(
             _ => _synchronizationContext?.Post(static state => ((MainViewModel)state!).UpdateClock(), this),
             null,
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromMinutes(1));
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
         _mediaSessionTimer = new System.Threading.Timer(
             _ => _synchronizationContext?.Post(
                 static state =>
@@ -181,8 +190,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 },
                 this),
             null,
-            TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(5));
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
         _audioMeterTimer = new System.Threading.Timer(
             _ =>
             {
@@ -216,6 +225,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
             null,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
+        _systemMetricsTimer = new System.Threading.Timer(
+            _ => RefreshSystemMetrics(),
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
+        NetworkChange.NetworkAvailabilityChanged += NetworkAvailabilityChanged;
         SelectPage("Home");
     }
 
@@ -337,6 +352,33 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         get => _connectivityText;
         private set => SetProperty(ref _connectivityText, value);
+    }
+
+    public bool IsOnline
+    {
+        get => _isOnline;
+        private set
+        {
+            if (SetProperty(ref _isOnline, value))
+            {
+                ConnectivityText = LocalizationManager.Instance[value ? "Home.Online" : "Home.Offline"];
+            }
+        }
+    }
+
+    public string SystemMetricsText
+    {
+        get
+        {
+            var cpu = _cpuUsagePercent is { } cpuPercent
+                ? $"{cpuPercent:0}%"
+                : "—";
+            return string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationManager.Instance["Home.SystemMetrics"],
+                cpu,
+                $"{_memoryUsagePercent:0}%");
+        }
     }
 
     public string GamesStatusText
@@ -560,8 +602,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsMusicPlaying
     {
         get => _isMusicPlaying;
-        private set => SetProperty(ref _isMusicPlaying, value);
+        private set
+        {
+            if (SetProperty(ref _isMusicPlaying, value))
+            {
+                OnPropertyChanged(nameof(MusicPlaybackTooltip));
+            }
+        }
     }
+    public string MusicPlaybackTooltip => LocalizationManager.Instance[
+        IsMusicPlaying ? "Home.MediaControl.Pause" : "Home.MediaControl.Play"];
 
     public double MusicVolume
     {
@@ -744,7 +794,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CurrentPageTitle));
         OnPropertyChanged(nameof(CurrentPageSubtitle));
         LaunchMessage = string.Empty;
-        if (IsSound)
+        if (IsSound && _isApplicationVisible)
         {
             try
             {
@@ -1317,6 +1367,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 Shortcuts.Add(shortcut);
             }
         }
+        _manualGames = settings.ManualGames ?? [];
         NotifyShortcutCollectionChanged();
         _selectedMusicService = MusicServices.FirstOrDefault(service =>
             string.Equals(service.Id, settings.MusicService, StringComparison.OrdinalIgnoreCase))?.Id
@@ -1833,6 +1884,80 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private async Task AddManualGameAsync(string? executablePath, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualInvalid"];
+            return;
+        }
+
+        string normalizedPath;
+        try
+        {
+            normalizedPath = Path.GetFullPath(executablePath);
+        }
+        catch (ArgumentException)
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualInvalid"];
+            return;
+        }
+        catch (IOException)
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualInvalid"];
+            return;
+        }
+        catch (NotSupportedException)
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualInvalid"];
+            return;
+        }
+
+        var extension = Path.GetExtension(normalizedPath);
+        if (!File.Exists(normalizedPath)
+            || (!string.Equals(extension, ".exe", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(extension, ".lnk", StringComparison.OrdinalIgnoreCase)))
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualInvalid"];
+            return;
+        }
+
+        if (_manualGames.Any(game => string.Equals(
+                game.ExecutablePath,
+                normalizedPath,
+                StringComparison.OrdinalIgnoreCase)))
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ManualDuplicate"];
+            return;
+        }
+
+        var game = new ManualGameDefinition(
+            Guid.NewGuid(),
+            Path.GetFileNameWithoutExtension(normalizedPath),
+            normalizedPath);
+        var updatedGames = _manualGames.Append(game).ToArray();
+        try
+        {
+            await _settingsService.SaveAsync(
+                CurrentSettings with { ManualGames = updatedGames },
+                cancellationToken);
+            _manualGames = updatedGames;
+            await RefreshGamesAsync(cancellationToken);
+            LaunchMessage = LocalizationManager.Instance["Games.ManualAdded"];
+        }
+        catch (IOException exception)
+        {
+            Log.Error(exception, "Could not save a manually added game.");
+            LaunchMessage = LocalizationManager.Instance["Games.ManualSaveFailed"];
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Error(exception, "Access was denied while saving a manually added game.");
+            LaunchMessage = LocalizationManager.Instance["Games.ManualSaveFailed"];
+        }
+    }
+
+    [RelayCommand]
     private async Task SaveSteamApiKeyAsync(CancellationToken cancellationToken)
     {
         try
@@ -2067,10 +2192,104 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _clockTimer.Dispose();
         _mediaSessionTimer.Dispose();
         _audioMeterTimer.Dispose();
+        _systemMetricsTimer.Dispose();
+        NetworkChange.NetworkAvailabilityChanged -= NetworkAvailabilityChanged;
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
         _audioDeviceNotificationService.DevicesChanged -= AudioDevicesChanged;
         StopAudioDeviceNotifications();
         GC.SuppressFinalize(this);
+    }
+
+    public void StartSystemMetrics() =>
+        _systemMetricsTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+
+    public void StopSystemMetrics() =>
+        _systemMetricsTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+    public void ShowDatabaseRecoveredNotice() =>
+        LaunchMessage = LocalizationManager.Instance["Database.Recovered"];
+
+    public void ShowDatabaseBackupFailureNotice() =>
+        LaunchMessage = LocalizationManager.Instance["Database.BackupFailed"];
+
+    public void SetApplicationVisible(bool isVisible)
+    {
+        if (_isApplicationVisible == isVisible)
+        {
+            return;
+        }
+
+        _isApplicationVisible = isVisible;
+        if (!isVisible)
+        {
+            _clockTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            _mediaSessionTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            _audioMeterTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            StopSystemMetrics();
+            StopAudioDeviceNotifications();
+            return;
+        }
+
+        _clockTimer.Change(TimeSpan.Zero, TimeSpan.FromMinutes(1));
+        _mediaSessionTimer.Change(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5));
+        StartSystemMetrics();
+        if (IsSound)
+        {
+            try
+            {
+                _audioDeviceNotificationService.Start();
+            }
+            catch (COMException exception)
+            {
+                Log.Warning(exception, "Could not subscribe to Windows audio device changes.");
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+            }
+            catch (Win32Exception exception)
+            {
+                Log.Warning(exception, "Could not subscribe to Windows audio device changes.");
+                AudioDevicesStatusText = LocalizationManager.Instance["Sound.Unavailable"];
+            }
+
+            RefreshAudioMixer();
+            _audioMeterTimer.Change(TimeSpan.FromMilliseconds(33), TimeSpan.FromMilliseconds(33));
+        }
+    }
+
+    private void RefreshSystemMetrics()
+    {
+        if (!_isApplicationVisible)
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshot = _systemMetricsService.Read();
+            _synchronizationContext?.Post(
+                static state =>
+                {
+                    var (viewModel, metrics) = ((MainViewModel, SystemMetricsSnapshot))state!;
+                    viewModel._cpuUsagePercent = metrics.CpuUsagePercent;
+                    viewModel._memoryUsagePercent = metrics.MemoryUsagePercent;
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsText));
+                },
+                (this, snapshot));
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Warning(exception, "Could not read Windows system performance metrics.");
+        }
+    }
+
+    private void NetworkAvailabilityChanged(object? sender, NetworkAvailabilityEventArgs e)
+    {
+        _synchronizationContext?.Post(
+            static state =>
+            {
+                var (viewModel, isAvailable) = ((MainViewModel, bool))state!;
+                viewModel.IsOnline = isAvailable;
+            },
+            (this, e.IsAvailable));
     }
 
     private async Task RefreshMusicSessionAsync()
@@ -2187,8 +2406,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void UpdateLocalizedProperties()
     {
         ComingSoonText = LocalizationManager.Instance["Home.Empty"];
-        ConnectivityText = LocalizationManager.Instance["Home.Ready"];
+        ConnectivityText = LocalizationManager.Instance[IsOnline ? "Home.Online" : "Home.Offline"];
         OnPropertyChanged(nameof(HomeLayoutModeLabel));
+        OnPropertyChanged(nameof(SystemMetricsText));
+        OnPropertyChanged(nameof(MusicPlaybackTooltip));
         OnPropertyChanged(nameof(MusicPlayerTrackTitle));
         OnPropertyChanged(nameof(MusicPlayerTrackArtist));
         OnPropertyChanged(nameof(MusicMuteTooltip));
@@ -2277,6 +2498,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         MusicService: SelectedMusicService,
         Shortcuts: Shortcuts.ToArray(),
         AudioProfiles: AudioProfiles.ToArray(),
+        ManualGames: _manualGames.ToArray(),
         HomeTiles: HomeTiles
             .Select(tile => new HomeTileLayoutEntry(
                 tile.LayoutId,

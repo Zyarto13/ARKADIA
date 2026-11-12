@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Arkadia.Infrastructure.Storage;
 using Arkadia.Infrastructure.Providers;
+using Microsoft.Data.Sqlite;
 
 namespace Arkadia.App;
 
@@ -68,13 +69,16 @@ public partial class App : System.Windows.Application, IDisposable
             {
                 services.AddSingleton<Core.Services.IExternalLauncher, ExternalLauncher>();
                 services.AddSingleton<Core.Services.ISettingsService>(_ => new JsonSettingsService());
-                services.AddSingleton<Core.Services.IAppDatabase, ArkadiaDatabase>();
+                services.AddSingleton<ArkadiaDatabase>();
+                services.AddSingleton<Core.Services.IAppDatabase>(provider =>
+                    provider.GetRequiredService<ArkadiaDatabase>());
                 services.AddSingleton<Core.Services.IStartupTaskService, StartupTaskService>();
                 services.AddSingleton<Core.Providers.IGameProvider>(serviceProvider =>
                     new SteamGameProvider(
                         serviceProvider.GetRequiredService<Core.Services.IExternalLauncher>(),
                         serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<Core.Providers.IGameProvider, EpicGamesProvider>();
+                services.AddSingleton<Core.Providers.IGameProvider, ManualGameProvider>();
                 services.AddSingleton<Core.Services.IGameAchievementService>(serviceProvider =>
                     new SteamAchievementService(serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<HttpClient>();
@@ -89,11 +93,49 @@ public partial class App : System.Windows.Application, IDisposable
             .Build();
 
         _host.Start();
-        await _host.Services.GetRequiredService<Core.Services.IAppDatabase>()
-            .InitializeAsync(CancellationToken.None);
-        await _host.Services.GetRequiredService<MainViewModel>().InitializeAsync();
+        var database = _host.Services.GetRequiredService<ArkadiaDatabase>();
+        bool databaseRecovered;
+        try
+        {
+            databaseRecovered = await database.RestoreLatestBackupIfCorruptedAsync(CancellationToken.None);
+        }
+        catch (InvalidDataException exception)
+        {
+            Log.Fatal(exception, "The local ARKADIA database is corrupted and cannot be recovered.");
+            System.Windows.MessageBox.Show(
+                Localization.LocalizationManager.Instance["Database.RecoveryFailed"],
+                "ARKADIA",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
+
+        await database.InitializeAsync(CancellationToken.None);
+        var backupFailed = false;
+        try
+        {
+            await database.CreateDailyBackupAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or SqliteException or InvalidDataException)
+        {
+            Log.Error(exception, "Could not create the daily ARKADIA database backup.");
+            backupFailed = true;
+        }
+
+        var viewModel = _host.Services.GetRequiredService<MainViewModel>();
+        await viewModel.InitializeAsync();
         MainWindow = _host.Services.GetRequiredService<MainWindow>();
         MainWindow.Show();
+        if (databaseRecovered)
+        {
+            viewModel.ShowDatabaseRecoveredNotice();
+        }
+        else if (backupFailed)
+        {
+            viewModel.ShowDatabaseBackupFailureNotice();
+        }
         _host.Services.GetRequiredService<TrayIconService>();
         if (e.Args.Contains("--minimized", StringComparer.OrdinalIgnoreCase))
         {

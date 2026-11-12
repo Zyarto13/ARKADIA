@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Arkadia.Core.Models;
+using Arkadia.App.Localization;
 using Arkadia.App.Services;
 using Arkadia.App.ViewModels;
 
@@ -24,6 +25,8 @@ public partial class MainWindow : Window
         _gameArtworkService = gameArtworkService;
         trayIconService.Attach(this);
         Loaded += MainWindow_Loaded;
+        IsVisibleChanged += MainWindow_IsVisibleChanged;
+        StateChanged += MainWindow_StateChanged;
     }
 
     public bool IsQuitting { get; set; }
@@ -88,8 +91,25 @@ public partial class MainWindow : Window
         }
     }
 
-    private void MainWindow_Loaded(object sender, RoutedEventArgs e) =>
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
         _isInitializingAppearance = false;
+        UpdateBackgroundActivity();
+    }
+
+    private void MainWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) =>
+        UpdateBackgroundActivity();
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e) =>
+        UpdateBackgroundActivity();
+
+    private void UpdateBackgroundActivity()
+    {
+        if (DataContext is MainViewModel viewModel)
+        {
+            viewModel.SetApplicationVisible(IsVisible && WindowState != WindowState.Minimized);
+        }
+    }
 
     private void SteamApiKey_Loaded(object sender, RoutedEventArgs e)
     {
@@ -104,6 +124,26 @@ public partial class MainWindow : Window
         if (sender is PasswordBox passwordBox && DataContext is MainViewModel viewModel)
         {
             viewModel.SteamApiKey = passwordBox.Password;
+        }
+    }
+
+    private async void AddManualGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = LocalizationManager.Instance["Games.SelectExecutable"],
+            Filter = LocalizationManager.Instance["Games.ExecutableFilter"],
+            CheckFileExists = true,
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            await viewModel.AddManualGameCommand.ExecuteAsync(dialog.FileName);
         }
     }
 

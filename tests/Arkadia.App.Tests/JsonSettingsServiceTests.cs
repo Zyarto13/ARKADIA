@@ -32,6 +32,13 @@ public sealed class JsonSettingsServiceTests
             [
                 new HomeTileLayoutEntry("music"),
                 new HomeTileLayoutEntry("steam", false, 2, 2)
+            ],
+            ManualGames:
+            [
+                new ManualGameDefinition(
+                    Guid.Parse("94074a2c-8dcb-4859-8501-adef54ddaf44"),
+                    "My Game",
+                    @"C:\Games\MyGame.exe")
             ]);
 
         try
@@ -41,10 +48,23 @@ public sealed class JsonSettingsServiceTests
             var loaded = await service.LoadAsync(CancellationToken.None);
 
             Assert.Equal(
-                settings with { Shortcuts = null, AudioProfiles = null, HomeTiles = null },
-                loaded with { Shortcuts = null, AudioProfiles = null, HomeTiles = null });
+                settings with
+                {
+                    Shortcuts = null,
+                    AudioProfiles = null,
+                    HomeTiles = null,
+                    ManualGames = null
+                },
+                loaded with
+                {
+                    Shortcuts = null,
+                    AudioProfiles = null,
+                    HomeTiles = null,
+                    ManualGames = null
+                });
             Assert.Equal(settings.Shortcuts, loaded.Shortcuts);
             Assert.Equal(settings.HomeTiles!.ToArray(), loaded.HomeTiles!.ToArray());
+            Assert.Equal(settings.ManualGames!.ToArray(), loaded.ManualGames!.ToArray());
             Assert.Collection(
                 loaded.AudioProfiles!,
                 profile =>

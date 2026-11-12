@@ -88,6 +88,8 @@ public sealed class HomeTileViewModel : ObservableObject
     public string Glyph { get; }
     public string? LaunchUri => _launchUri;
     public string? NavigationKey { get; }
+    public bool IsMusicTile => Id is "spotify" or "deezer" or "youtubemusic";
+    public bool IsSystemTile => Id == "system";
     public Geometry? BrandIcon => IconCatalog.ForBrand(Id);
     public bool HasBrandIcon => Id is "spotify" or "deezer" or "youtubemusic" or "discord" or "steam" or "epic" or "curseforge" or "minecraft";
     public Brush BrandColor => Id switch
@@ -119,6 +121,7 @@ public sealed class HomeTileViewModel : ObservableObject
         _launchUri = launchUri;
         OnPropertyChanged(nameof(Id));
         OnPropertyChanged(nameof(LaunchUri));
+        OnPropertyChanged(nameof(IsMusicTile));
         OnPropertyChanged(nameof(BrandIcon));
         OnPropertyChanged(nameof(HasBrandIcon));
         OnPropertyChanged(nameof(BrandColor));

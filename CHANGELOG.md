@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.19
+
+- Restored music controls to the home music tile, with playback-aware play/pause icon and tooltip.
+- Filled and clipped the music tile with high-quality album artwork while keeping controls available.
+- Added manual game entries, offline network status, live CPU/RAM statistics, and tray-aware refresh suspension.
+- Added daily SQLite backups with seven-day rotation and automatic recovery from the latest valid backup.
+- Updated GitHub Actions to current Node.js-compatible action versions.
+
 ## 1.0.18
 
 - Added drag-and-drop tile reordering to the home layout editor.

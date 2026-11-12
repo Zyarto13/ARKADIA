@@ -2,6 +2,7 @@ using System.IO;
 using Arkadia.Core.Services;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 
 namespace Arkadia.Infrastructure.Storage;
 
@@ -9,17 +10,18 @@ public sealed class ArkadiaDatabase : IAppDatabase
 {
     private const int CurrentSchemaVersion = 1;
     private readonly string _connectionString;
+    private readonly string _databasePath;
 
     public ArkadiaDatabase(string? databasePath = null)
     {
-        var path = Path.GetFullPath(databasePath ?? Path.Combine(
+        _databasePath = Path.GetFullPath(databasePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Arkadia",
             "arkadia.db"));
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(_databasePath)!);
         _connectionString = new SqliteConnectionStringBuilder
         {
-            DataSource = path,
+            DataSource = _databasePath,
             Mode = SqliteOpenMode.ReadWriteCreate,
             Cache = SqliteCacheMode.Shared,
             Pooling = false
@@ -92,12 +94,102 @@ public sealed class ArkadiaDatabase : IAppDatabase
         return string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase);
     }
 
+    public async Task<bool> RestoreLatestBackupIfCorruptedAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(_databasePath))
+        {
+            return false;
+        }
+
+        var isHealthy = false;
+        try
+        {
+            isHealthy = await QuickCheckAsync(cancellationToken);
+        }
+        catch (SqliteException)
+        {
+        }
+
+        if (isHealthy)
+        {
+            return false;
+        }
+
+        foreach (var backupPath in GetBackupPaths().OrderByDescending(path => path, StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (!await new ArkadiaDatabase(backupPath).QuickCheckAsync(cancellationToken))
+                {
+                    continue;
+                }
+            }
+            catch (SqliteException)
+            {
+                continue;
+            }
+
+            var restorePath = $"{_databasePath}.restore.tmp";
+            File.Copy(backupPath, restorePath, overwrite: true);
+            DeleteSidecarFiles(_databasePath);
+            File.Move(restorePath, _databasePath, overwrite: true);
+            return true;
+        }
+
+        throw new InvalidDataException(
+            "The ARKADIA database is corrupted and no valid automatic backup could be restored.");
+    }
+
+    public async Task CreateDailyBackupAsync(CancellationToken cancellationToken)
+    {
+        var backupDirectory = GetBackupDirectory();
+        Directory.CreateDirectory(backupDirectory);
+
+        var date = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var backupPath = Path.Combine(backupDirectory, $"arkadia-{date}.db");
+        var temporaryPath = $"{backupPath}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await using (var source = await OpenConnectionAsync(cancellationToken))
+            await using (var destination = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = temporaryPath,
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                Pooling = false
+            }.ToString()))
+            {
+                await destination.OpenAsync(cancellationToken);
+                source.BackupDatabase(destination);
+            }
+
+            if (!await new ArkadiaDatabase(temporaryPath).QuickCheckAsync(cancellationToken))
+            {
+                throw new InvalidDataException("The generated ARKADIA database backup failed SQLite quick_check.");
+            }
+
+            File.Move(temporaryPath, backupPath, overwrite: true);
+            RotateBackups();
+        }
+        finally
+        {
+            File.Delete(temporaryPath);
+        }
+    }
+
     public async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
         var connection = CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        await ConfigureConnectionAsync(connection, cancellationToken);
-        return connection;
+        try
+        {
+            await connection.OpenAsync(cancellationToken);
+            await ConfigureConnectionAsync(connection, cancellationToken);
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
     }
 
     private static async Task ConfigureConnectionAsync(
@@ -107,6 +199,58 @@ public sealed class ArkadiaDatabase : IAppDatabase
         await connection.ExecuteAsync(new CommandDefinition(
             "PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
             cancellationToken: cancellationToken));
+    }
+
+    private string[] GetBackupPaths()
+    {
+        var backupDirectory = GetBackupDirectory();
+        if (!Directory.Exists(backupDirectory))
+        {
+            return [];
+        }
+
+        return Directory.GetFiles(backupDirectory, "arkadia-*.db");
+    }
+
+    private string GetBackupDirectory() =>
+        Path.Combine(Path.GetDirectoryName(_databasePath)!, "backups");
+
+    private void RotateBackups()
+    {
+        var backups = GetBackupPaths()
+            .Select(path => new
+            {
+                Path = path,
+                Date = ParseBackupDate(path)
+            })
+            .Where(item => item.Date is not null)
+            .OrderByDescending(item => item.Date)
+            .ToArray();
+
+        foreach (var backup in backups.Skip(7))
+        {
+            File.Delete(backup.Path);
+        }
+    }
+
+    private static DateTime? ParseBackupDate(string path)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        return fileName.StartsWith("arkadia-", StringComparison.Ordinal)
+            && DateTime.TryParseExact(
+                fileName["arkadia-".Length..],
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var date)
+                ? date
+                : null;
+    }
+
+    private static void DeleteSidecarFiles(string databasePath)
+    {
+        File.Delete($"{databasePath}-wal");
+        File.Delete($"{databasePath}-shm");
     }
 
     private const string InitialSchema = """

@@ -41,6 +41,7 @@ public sealed record GameEntry(
     {
         "steam" => "Steam",
         "epic" => "Epic Games",
+        "manual" => "Manual",
         _ => ProviderId
     };
 }
