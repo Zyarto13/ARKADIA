@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.17
+
+- Added a persistent sidebar music player with album artwork, previous/play/next controls, volume adjustment, numeric volume entry, and mute.
+- Open the Deezer app directly from its home tile.
+- Added home-tile visibility and ordering customization with saved settings.
+- Applied gradient backgrounds and surfaces across all themes.
+
 ## 1.0.16
 
 - Refreshed the default dark theme with a graphite, high-contrast palette inspired by the new visual direction.
