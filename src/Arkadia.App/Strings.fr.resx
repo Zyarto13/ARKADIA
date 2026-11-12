@@ -65,6 +65,11 @@
   <data name="Home.Layout.Reset" xml:space="preserve"><value>Réinitialiser</value></data>
   <data name="Home.Layout.MoveUp" xml:space="preserve"><value>Avancer la tuile</value></data>
   <data name="Home.Layout.MoveDown" xml:space="preserve"><value>Reculer la tuile</value></data>
+  <data name="Home.Layout.DragHint" xml:space="preserve"><value>Glissez les tuiles pour les déplacer ; utilisez les flèches pour les redimensionner.</value></data>
+  <data name="Home.Layout.DecreaseWidth" xml:space="preserve"><value>Réduire la largeur</value></data>
+  <data name="Home.Layout.IncreaseWidth" xml:space="preserve"><value>Augmenter la largeur</value></data>
+  <data name="Home.Layout.DecreaseHeight" xml:space="preserve"><value>Réduire la hauteur</value></data>
+  <data name="Home.Layout.IncreaseHeight" xml:space="preserve"><value>Augmenter la hauteur</value></data>
   <data name="Home.Layout.Hide" xml:space="preserve"><value>Masquer la tuile</value></data>
   <data name="Home.Layout.Show" xml:space="preserve"><value>Afficher la tuile</value></data>
   <data name="Home.Layout.Hidden" xml:space="preserve"><value>Masquée · cliquer sur + pour rétablir</value></data>

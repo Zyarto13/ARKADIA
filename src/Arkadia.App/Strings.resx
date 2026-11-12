@@ -65,6 +65,11 @@
   <data name="Home.Layout.Reset" xml:space="preserve"><value>Reset layout</value></data>
   <data name="Home.Layout.MoveUp" xml:space="preserve"><value>Move tile earlier</value></data>
   <data name="Home.Layout.MoveDown" xml:space="preserve"><value>Move tile later</value></data>
+  <data name="Home.Layout.DragHint" xml:space="preserve"><value>Drag tiles to reorder; use arrows to resize.</value></data>
+  <data name="Home.Layout.DecreaseWidth" xml:space="preserve"><value>Make tile narrower</value></data>
+  <data name="Home.Layout.IncreaseWidth" xml:space="preserve"><value>Make tile wider</value></data>
+  <data name="Home.Layout.DecreaseHeight" xml:space="preserve"><value>Make tile shorter</value></data>
+  <data name="Home.Layout.IncreaseHeight" xml:space="preserve"><value>Make tile taller</value></data>
   <data name="Home.Layout.Hide" xml:space="preserve"><value>Hide tile</value></data>
   <data name="Home.Layout.Show" xml:space="preserve"><value>Show tile</value></data>
   <data name="Home.Layout.Hidden" xml:space="preserve"><value>Hidden · click + to restore</value></data>

@@ -31,7 +31,7 @@ public sealed class JsonSettingsServiceTests
             HomeTiles:
             [
                 new HomeTileLayoutEntry("music"),
-                new HomeTileLayoutEntry("steam", false)
+                new HomeTileLayoutEntry("steam", false, 2, 2)
             ]);
 
         try
@@ -81,6 +81,35 @@ public sealed class JsonSettingsServiceTests
             var loaded = await service.LoadAsync(CancellationToken.None);
 
             Assert.Equal("Spotify", loaded.MusicService);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task LoadAsyncDefaultsTileSpansForPreviouslySavedLayouts()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"arkadia-tests-{Guid.NewGuid():N}");
+        var path = Path.Combine(directory, "settings.json");
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(
+                path,
+                """{"Theme":"Blue","Language":"en","HomeTiles":[{"Id":"music","IsVisible":false}]}""");
+            using var service = new JsonSettingsService(path);
+
+            var loaded = await service.LoadAsync(CancellationToken.None);
+
+            var tile = Assert.Single(loaded.HomeTiles!);
+            Assert.Equal(1, tile.ColumnSpan);
+            Assert.Equal(1, tile.RowSpan);
         }
         finally
         {

@@ -7,6 +7,8 @@ using Color = System.Windows.Media.Color;
 
 namespace Arkadia.App.ViewModels;
 
+public sealed record HomeTileDropRequest(string SourceId, string TargetId);
+
 public sealed class HomeTileViewModel : ObservableObject
 {
     private string _titleKey;
@@ -14,6 +16,8 @@ public sealed class HomeTileViewModel : ObservableObject
     private string _id;
     private string? _launchUri;
     private bool _isVisible = true;
+    private int _columnSpan = 1;
+    private int _rowSpan = 1;
 
     public HomeTileViewModel(
         string id,
@@ -52,6 +56,34 @@ public sealed class HomeTileViewModel : ObservableObject
     }
     public string VisibilityTooltip => LocalizationManager.Instance[
         IsVisible ? "Home.Layout.Hide" : "Home.Layout.Show"];
+
+    public int ColumnSpan
+    {
+        get => _columnSpan;
+        set
+        {
+            if (value is < 1 or > 3)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+
+            SetProperty(ref _columnSpan, value);
+        }
+    }
+
+    public int RowSpan
+    {
+        get => _rowSpan;
+        set
+        {
+            if (value is < 1 or > 3)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+
+            SetProperty(ref _rowSpan, value);
+        }
+    }
 
     public string Glyph { get; }
     public string? LaunchUri => _launchUri;

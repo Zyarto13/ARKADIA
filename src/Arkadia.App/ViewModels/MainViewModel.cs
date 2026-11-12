@@ -1485,6 +1485,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         foreach (var tile in HomeTiles)
         {
             tile.IsVisible = true;
+            tile.ColumnSpan = 1;
+            tile.RowSpan = 1;
         }
 
         for (var targetIndex = 0; targetIndex < DefaultHomeTileOrder.Length; targetIndex++)
@@ -1520,6 +1522,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private async Task ReorderHomeTileAsync(
+        HomeTileDropRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            return;
+        }
+
+        var source = HomeTiles.FirstOrDefault(tile =>
+            string.Equals(tile.LayoutId, request.SourceId, StringComparison.Ordinal));
+        var target = HomeTiles.FirstOrDefault(tile =>
+            string.Equals(tile.LayoutId, request.TargetId, StringComparison.Ordinal));
+        if (source is null || target is null)
+        {
+            return;
+        }
+
+        var sourceIndex = HomeTiles.IndexOf(source);
+        var targetIndex = HomeTiles.IndexOf(target);
+        if (sourceIndex == targetIndex)
+        {
+            return;
+        }
+
+        HomeTiles.Move(sourceIndex, sourceIndex < targetIndex ? targetIndex - 1 : targetIndex);
+        RefreshVisibleHomeTiles();
+        await PersistHomeTileLayoutAsync(cancellationToken);
+    }
+
+    [RelayCommand]
     private async Task ToggleHomeTileVisibilityAsync(HomeTileViewModel? tile, CancellationToken cancellationToken)
     {
         if (tile is null)
@@ -1529,6 +1562,45 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         tile.IsVisible = !tile.IsVisible;
         RefreshVisibleHomeTiles();
+        await PersistHomeTileLayoutAsync(cancellationToken);
+    }
+
+    [RelayCommand]
+    private Task DecreaseHomeTileWidthAsync(HomeTileViewModel? tile, CancellationToken cancellationToken) =>
+        ResizeHomeTileAsync(tile, -1, 0, cancellationToken);
+
+    [RelayCommand]
+    private Task IncreaseHomeTileWidthAsync(HomeTileViewModel? tile, CancellationToken cancellationToken) =>
+        ResizeHomeTileAsync(tile, 1, 0, cancellationToken);
+
+    [RelayCommand]
+    private Task DecreaseHomeTileHeightAsync(HomeTileViewModel? tile, CancellationToken cancellationToken) =>
+        ResizeHomeTileAsync(tile, 0, -1, cancellationToken);
+
+    [RelayCommand]
+    private Task IncreaseHomeTileHeightAsync(HomeTileViewModel? tile, CancellationToken cancellationToken) =>
+        ResizeHomeTileAsync(tile, 0, 1, cancellationToken);
+
+    private async Task ResizeHomeTileAsync(
+        HomeTileViewModel? tile,
+        int columnDelta,
+        int rowDelta,
+        CancellationToken cancellationToken)
+    {
+        if (tile is null)
+        {
+            return;
+        }
+
+        var columnSpan = tile.ColumnSpan + columnDelta;
+        var rowSpan = tile.RowSpan + rowDelta;
+        if (columnSpan is < 1 or > 3 || rowSpan is < 1 or > 3)
+        {
+            return;
+        }
+
+        tile.ColumnSpan = columnSpan;
+        tile.RowSpan = rowSpan;
         await PersistHomeTileLayoutAsync(cancellationToken);
     }
 
@@ -2206,7 +2278,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Shortcuts: Shortcuts.ToArray(),
         AudioProfiles: AudioProfiles.ToArray(),
         HomeTiles: HomeTiles
-            .Select(tile => new HomeTileLayoutEntry(tile.LayoutId, tile.IsVisible))
+            .Select(tile => new HomeTileLayoutEntry(
+                tile.LayoutId,
+                tile.IsVisible,
+                tile.ColumnSpan,
+                tile.RowSpan))
             .ToArray());
 
     private static bool IsValidShortcut(string name, string uriText) =>
@@ -2240,6 +2316,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (savedLayout.Any(entry =>
                 entry is null
                 || !tilesById.ContainsKey(entry.Id)
+                || entry.ColumnSpan is < 1 or > 3
+                || entry.RowSpan is < 1 or > 3
                 || !savedIds.Add(entry.Id)))
         {
             Log.Warning("The saved home tile layout is invalid; using the default layout.");
@@ -2250,6 +2328,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         foreach (var entry in savedLayout)
         {
             tilesById[entry.Id].IsVisible = entry.IsVisible;
+            tilesById[entry.Id].ColumnSpan = entry.ColumnSpan;
+            tilesById[entry.Id].RowSpan = entry.RowSpan;
         }
 
         var orderedTiles = savedLayout

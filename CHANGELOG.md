@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.18
+
+- Added drag-and-drop tile reordering to the home layout editor.
+- Added independent tile width and height controls with automatic collision-free placement.
+- Persisted tile dimensions with backward-compatible settings defaults.
+
 ## 1.0.17
 
 - Added a persistent sidebar music player with album artwork, previous/play/next controls, volume adjustment, numeric volume entry, and mute.

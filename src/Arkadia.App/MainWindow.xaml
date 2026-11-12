@@ -364,6 +364,12 @@
                                 VerticalAlignment="Top"
                                 Orientation="Horizontal"
                                 Visibility="{Binding IsHome, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="{Binding [Home.Layout.DragHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,10,0"
+                                   Visibility="{Binding IsHomeEditMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         <TextBlock Text="{Binding [Home.ShortcutsHint], Source={x:Static loc:LocalizationManager.Instance}}"
                                    FontSize="10"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
@@ -393,14 +399,21 @@
                     <Grid>
                         <ItemsControl ItemsSource="{Binding VisibleHomeTiles}"
                                       Visibility="{Binding IsHome, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="controls:HomeTileGridPanel.ColumnSpan" Value="{Binding ColumnSpan}" />
+                                    <Setter Property="controls:HomeTileGridPanel.RowSpan" Value="{Binding RowSpan}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" />
+                                    <controls:HomeTileGridPanel />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,0,12,12" Height="260">
+                                    <Grid controls:HomeTileDragDropBehavior.IsDragDropEnabled="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          controls:HomeTileDragDropBehavior.ReorderCommand="{Binding DataContext.ReorderHomeTileCommand, RelativeSource={RelativeSource AncestorType=Window}}">
                                         <Button Command="{Binding DataContext.LaunchTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 HorizontalContentAlignment="Stretch"
@@ -550,12 +563,12 @@
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                                         </Border>
-                                        <StackPanel HorizontalAlignment="Right"
-                                                    VerticalAlignment="Top"
-                                                    Orientation="Horizontal"
-                                                    Margin="0,10,10,0"
-                                                    Panel.ZIndex="3"
-                                                    Visibility="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <WrapPanel HorizontalAlignment="Right"
+                                                   VerticalAlignment="Top"
+                                                   Width="126"
+                                                   Margin="0,10,10,0"
+                                                   Panel.ZIndex="3"
+                                                   Visibility="{Binding DataContext.IsHomeEditMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <Button Content="↑"
                                                     Width="30"
                                                     Height="28"
@@ -576,9 +589,50 @@
                                                     CommandParameter="{Binding}"
                                                     ToolTip="{Binding [Home.Layout.MoveDown], Source={x:Static loc:LocalizationManager.Instance}}"
                                                     AutomationProperties.Name="{Binding [Home.Layout.MoveDown], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Content="↔−"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,4"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.DecreaseHomeTileWidthCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.DecreaseWidth], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.DecreaseWidth], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Content="↔+"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,4"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.IncreaseHomeTileWidthCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.IncreaseWidth], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.IncreaseWidth], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Content="↕−"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,4"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.DecreaseHomeTileHeightCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.DecreaseHeight], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.DecreaseHeight], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <Button Content="↕+"
+                                                    Width="30"
+                                                    Height="28"
+                                                    Padding="2"
+                                                    Margin="0,0,4,4"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Command="{Binding DataContext.IncreaseHomeTileHeightCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{Binding [Home.Layout.IncreaseHeight], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                    AutomationProperties.Name="{Binding [Home.Layout.IncreaseHeight], Source={x:Static loc:LocalizationManager.Instance}}" />
                                             <Button Width="30"
                                                     Height="28"
                                                     Padding="2"
+                                                    Margin="0,0,4,4"
                                                     Style="{StaticResource SurfaceButtonStyle}"
                                                     Command="{Binding DataContext.ToggleHomeTileVisibilityCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
@@ -599,7 +653,7 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                             </Button>
-                                        </StackPanel>
+                                        </WrapPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
