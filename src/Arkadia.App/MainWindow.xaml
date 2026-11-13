@@ -30,6 +30,7 @@
         <KeyBinding Key="D3" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Achievements" />
         <KeyBinding Key="D4" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Sound" />
         <KeyBinding Key="D5" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Shortcuts" />
+        <KeyBinding Key="D6" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Settings" />
     </Window.InputBindings>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -333,6 +334,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
@@ -362,8 +364,27 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center"
                            Margin="0,0,18,0" />
-                <Button x:Name="UpdateActionButton"
+                <Button x:Name="SettingsQuickAccessButton"
                         Grid.Column="3"
+                        Width="40"
+                        Height="40"
+                        Padding="8"
+                        Margin="0,0,10,0"
+                        Style="{StaticResource NavigationButtonStyle}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Command="{Binding SelectPageCommand}"
+                        CommandParameter="Settings"
+                        Tag="{Binding IsSettingsSelected}"
+                        ToolTip="{Binding [Navigation.Settings], Source={x:Static loc:LocalizationManager.Instance}}"
+                        AutomationProperties.Name="{Binding [Navigation.Settings], Source={x:Static loc:LocalizationManager.Instance}}">
+                    <Path Data="{x:Static icons:IconCatalog.Settings}"
+                          Width="18"
+                          Height="18"
+                          Stretch="Uniform"
+                          Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
+                </Button>
+                <Button x:Name="UpdateActionButton"
+                        Grid.Column="4"
                         Width="40"
                         Height="40"
                         Padding="4"
@@ -406,7 +427,7 @@
                                  Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     </Grid>
                 </Button>
-                <StackPanel Grid.Column="4"
+                <StackPanel Grid.Column="5"
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
                     <Button x:Name="MinimizeWindowButton"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.25
+
+- Restored an always-visible Settings shortcut in the title bar and added the `Ctrl+6` keyboard shortcut.
+
 ## 1.0.24
 
 - Replaced the native title bar with a resizable custom chrome and branded window controls.

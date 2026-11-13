@@ -38,6 +38,11 @@ public sealed class WindowChromeConfigurationTests
         Assert.Contains("MinimizeWindowButton", namedElements);
         Assert.Contains("MaximizeWindowButton", namedElements);
         Assert.Contains("CloseWindowButton", namedElements);
+        Assert.Contains("SettingsQuickAccessButton", namedElements);
         Assert.Contains("UpdateActionButton", namedElements);
+
+        var settingsButton = window.Descendants()
+            .Single(element => (string?)element.Attribute(xaml + "Name") == "SettingsQuickAccessButton");
+        Assert.Equal("Settings", (string?)settingsButton.Attribute("CommandParameter"));
     }
 }
