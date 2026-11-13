@@ -36,24 +36,161 @@ jobs:
       - name: Run tests
         run: dotnet test .\Arkadia.sln --configuration Release
 
-      - name: Build installer
+      - name: Download previous Velopack package for delta generation
         shell: pwsh
-        run: .\scripts\build-installer.ps1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $previousPackagesPath = Join-Path $env:RUNNER_TEMP 'arkadia-previous-velopack'
+          New-Item -ItemType Directory -Force -Path $previousPackagesPath | Out-Null
+          $releases = gh release list --json tagName,isDraft,isPrerelease --limit 100 | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not list previous GitHub releases (exit code $LASTEXITCODE)."
+          }
 
-      - name: Create SHA-256 checksum
+          $foundPreviousPackage = $false
+          foreach ($release in $releases) {
+            if ($release.tagName -eq $env:GITHUB_REF_NAME -or $release.isDraft -or $release.isPrerelease) {
+              continue
+            }
+
+            $assetNames = gh release view $release.tagName --json assets --jq '.assets[].name'
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not inspect assets for release $($release.tagName) (exit code $LASTEXITCODE)."
+            }
+
+            $packageName = $assetNames |
+              Where-Object { $_ -match '^ARKADIA-.*-full\.nupkg$' } |
+              Select-Object -First 1
+            if (-not $packageName) {
+              continue
+            }
+
+            gh release download $release.tagName --pattern $packageName --dir $previousPackagesPath
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not download the previous Velopack package $packageName from $($release.tagName)."
+            }
+
+            $foundPreviousPackage = $true
+            break
+          }
+
+          if (-not $foundPreviousPackage) {
+            'No previous Velopack package was found; this release will contain a full package without a delta.' |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
+      - name: Import Authenticode certificate when configured
+        shell: pwsh
+        env:
+          ARKADIA_SIGNING_CERTIFICATE_BASE64: ${{ secrets.ARKADIA_SIGNING_CERTIFICATE_BASE64 }}
+          ARKADIA_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.ARKADIA_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          $certificateBase64 = $env:ARKADIA_SIGNING_CERTIFICATE_BASE64
+          $certificatePassword = $env:ARKADIA_SIGNING_CERTIFICATE_PASSWORD
+          if ([string]::IsNullOrWhiteSpace($certificateBase64) -or [string]::IsNullOrWhiteSpace($certificatePassword)) {
+            "The release will be unsigned. Configure the ARKADIA_SIGNING_CERTIFICATE_BASE64 and ARKADIA_SIGNING_CERTIFICATE_PASSWORD repository secrets to enable Authenticode signing." |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Write-Output 'No code-signing certificate is configured; Velopack and Inno Setup packages will be unsigned.'
+            "ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT=" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            exit 0
+          }
+
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'arkadia-signing-certificate.pfx'
+          try {
+            [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($certificateBase64))
+            $securePassword = ConvertTo-SecureString $certificatePassword -AsPlainText -Force
+            $importedCertificates = @(Import-PfxCertificate `
+              -FilePath $certificatePath `
+              -CertStoreLocation Cert:\CurrentUser\My `
+              -Password $securePassword)
+            $certificate = $importedCertificates |
+              Where-Object { $_.HasPrivateKey } |
+              Select-Object -First 1
+            if ($null -eq $certificate -or -not $certificate.HasPrivateKey) {
+              throw 'The signing certificate does not include a private key.'
+            }
+
+            "ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" |
+              Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+          finally {
+            Remove-Item -LiteralPath $certificatePath -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Build Inno Setup compatibility installer and Velopack packages
         shell: pwsh
         run: |
-          $installer = ".\dist\ARKADIA-Setup-$($env:GITHUB_REF_NAME -replace '^v', '')-x64.exe"
-          $checksum = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$checksum  $(Split-Path -Leaf $installer)" | Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
+          .\scripts\build-installer.ps1 `
+            -PreviousPackagesPath (Join-Path $env:RUNNER_TEMP 'arkadia-previous-velopack')
+
+      - name: Sign and verify the Inno Setup compatibility installer
+        if: env.ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT != ''
+        shell: pwsh
+        run: |
+          $signatureTool = Get-ChildItem `
+            -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin\*\x64\signtool.exe') |
+            Sort-Object -Property FullName -Descending |
+            Select-Object -First 1
+          if ($null -eq $signatureTool) {
+            throw 'The Windows SDK SignTool was not found on the runner.'
+          }
+
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $installer = ".\dist\ARKADIA-Setup-$version-x64.exe"
+          & $signatureTool.FullName sign /fd SHA256 /s My /sha1 $env:ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT /tr http://timestamp.digicert.com /td SHA256 $installer
+          if ($LASTEXITCODE -ne 0) {
+            throw "Authenticode signing failed with exit code $LASTEXITCODE."
+          }
+
+          foreach ($signedPackage in @($installer, '.\dist\velopack\ARKADIA-win-Setup.exe')) {
+            & $signatureTool.FullName verify /pa /v $signedPackage
+            if ($LASTEXITCODE -ne 0) {
+              throw "Authenticode signature verification failed for $signedPackage with exit code $LASTEXITCODE."
+            }
+          }
+
+          "The Inno Setup installer and Velopack setup were signed and their Authenticode signatures were verified." |
+            Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Create SHA-256 checksums
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $legacyInstaller = ".\dist\ARKADIA-Setup-$version-x64.exe"
+          $velopackInstaller = '.\dist\velopack\ARKADIA-win-Setup.exe'
+          foreach ($installer in @($legacyInstaller, $velopackInstaller)) {
+            $checksum = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$checksum  $(Split-Path -Leaf $installer)" |
+              Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
+          }
 
       - name: Publish GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $installer = ".\dist\ARKADIA-Setup-$($env:GITHUB_REF_NAME -replace '^v', '')-x64.exe"
-          gh release create $env:GITHUB_REF_NAME $installer "$installer.sha256" `
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $legacyInstaller = ".\dist\ARKADIA-Setup-$version-x64.exe"
+          $assets = @($legacyInstaller, "$legacyInstaller.sha256")
+          $assets += (Get-ChildItem -LiteralPath '.\dist\velopack' -File | Select-Object -ExpandProperty FullName)
+          if (-not (Test-Path -LiteralPath '.\dist\velopack\releases.win.json')) {
+            throw 'Velopack did not create releases.win.json; refusing to publish an unusable update feed.'
+          }
+
+          gh release create $env:GITHUB_REF_NAME @assets `
             --title "ARKADIA $env:GITHUB_REF_NAME" `
             --generate-notes `
             --latest
+          if ($LASTEXITCODE -ne 0) {
+            throw "Creating the GitHub release failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Remove Authenticode certificate from runner
+        if: always() && env.ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT != ''
+        shell: pwsh
+        run: |
+          Remove-Item `
+            -LiteralPath "Cert:\CurrentUser\My\$env:ARKADIA_SIGNING_CERTIFICATE_THUMBPRINT" `
+            -Force `
+            -ErrorAction SilentlyContinue

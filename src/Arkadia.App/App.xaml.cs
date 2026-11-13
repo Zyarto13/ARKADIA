@@ -123,12 +123,17 @@ public partial class App : System.Windows.Application, IDisposable
                         serviceProvider.GetRequiredService<Core.Services.IExternalLauncher>(),
                         serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<Core.Providers.IGameProvider, EpicGamesProvider>();
+                services.AddSingleton<Core.Providers.IGameProvider, MinecraftGameProvider>();
+                services.AddSingleton<Core.Providers.IGameProvider, CurseForgeGameProvider>();
+                services.AddSingleton<Core.Providers.IGameProvider, RinaorcGameProvider>();
                 services.AddSingleton<Core.Providers.IGameProvider, ManualGameProvider>();
                 services.AddSingleton<Core.Services.IGameAchievementService>(serviceProvider =>
                     new SteamAchievementService(serviceProvider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<HttpClient>();
-                services.AddSingleton<GameArtworkService>();
-                services.AddSingleton<GitHubUpdateService>();
+                services.AddSingleton(provider => new GameArtworkService(
+                    provider.GetRequiredService<HttpClient>()));
+                services.AddSingleton(provider => new GitHubUpdateService(
+                    provider.GetRequiredService<HttpClient>()));
                 services.AddSingleton<SteamApiKeyStore>();
                 services.AddSingleton<ThemeService>();
                 services.AddSingleton<TrayIconService>();

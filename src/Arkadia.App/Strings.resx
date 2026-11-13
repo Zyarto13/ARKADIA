@@ -195,11 +195,13 @@
   <data name="Settings.Updates.CurrentVersion" xml:space="preserve"><value>Installed version</value></data>
   <data name="Settings.Updates.Check" xml:space="preserve"><value>Check for updates</value></data>
   <data name="Settings.Updates.Install" xml:space="preserve"><value>Download and install</value></data>
+  <data name="Settings.Updates.Migrate" xml:space="preserve"><value>Upgrade installer</value></data>
   <data name="Settings.Updates.Checking" xml:space="preserve"><value>Checking GitHub for a newer version…</value></data>
   <data name="Settings.Updates.NoRelease" xml:space="preserve"><value>No ARKADIA release has been published yet.</value></data>
+  <data name="Settings.Updates.NotInstalled" xml:space="preserve"><value>Install ARKADIA with its setup to enable updates.</value></data>
   <data name="Settings.Updates.UpToDate" xml:space="preserve"><value>You have the latest version ({0}).</value></data>
   <data name="Settings.Updates.Available" xml:space="preserve"><value>Version {0} is available.</value></data>
-  <data name="Settings.Updates.InstallRequired" xml:space="preserve"><value>Version {0} is available. Install ARKADIA with its setup first to enable in-app updates.</value></data>
+  <data name="Settings.Updates.MigrationAvailable" xml:space="preserve"><value>Version {0} is available. This update also moves ARKADIA to the new update system.</value></data>
   <data name="Settings.Updates.CheckFailed" xml:space="preserve"><value>Could not check for updates. Check your internet connection and try again.</value></data>
   <data name="Settings.Updates.Installing" xml:space="preserve"><value>Downloading and verifying the update. ARKADIA will restart to install it.</value></data>
   <data name="Settings.Updates.InstallFailed" xml:space="preserve"><value>The update could not be started. See the application log for details.</value></data>
@@ -220,6 +222,18 @@
   <data name="Games.ManualDuplicate" xml:space="preserve"><value>This game is already in your library.</value></data>
   <data name="Games.ManualAdded" xml:space="preserve"><value>Game added to your library.</value></data>
   <data name="Games.ManualSaveFailed" xml:space="preserve"><value>Could not save this game.</value></data>
+  <data name="Games.ScanPc" xml:space="preserve"><value>Scan a folder</value></data>
+  <data name="Games.ScanPc.SelectFolder" xml:space="preserve"><value>Select the folder to scan for installed games.</value></data>
+  <data name="Games.ScanPc.NoCandidates" xml:space="preserve"><value>No recognizable game executables were found in this folder.</value></data>
+  <data name="Games.ScanPc.Failed" xml:space="preserve"><value>Could not scan this folder. Check that it exists and that you have access.</value></data>
+  <data name="Games.ScanReview.Title" xml:space="preserve"><value>Potentially detected games</value></data>
+  <data name="Games.ScanReview.Description" xml:space="preserve"><value>Review the results and select only the games to add. Nothing is added without your confirmation.</value></data>
+  <data name="Games.ScanReview.Summary" xml:space="preserve"><value>{0} candidate(s) found · inaccessible folders: {1} {2}</value></data>
+  <data name="Games.ScanReview.Truncated" xml:space="preserve"><value>· Results were limited to keep the scan responsive.</value></data>
+  <data name="Games.ScanReview.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Games.ScanReview.Add" xml:space="preserve"><value>Add selected</value></data>
+  <data name="Games.ScanReview.NoNewGames" xml:space="preserve"><value>No new games were selected.</value></data>
+  <data name="Games.ScanReview.Imported" xml:space="preserve"><value>{0} game(s) added to the library.</value></data>
   <data name="Games.SortPlaytime" xml:space="preserve"><value>Sort by playtime ↓</value></data>
   <data name="Games.Search" xml:space="preserve"><value>Search installed games</value></data>
   <data name="Games.FilterProvider" xml:space="preserve"><value>Filter by platform</value></data>

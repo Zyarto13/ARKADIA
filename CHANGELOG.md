@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.24
+
+- Replaced the native title bar with a resizable custom chrome and branded window controls.
+- Added automatic update checks at startup and every six hours, with a top-bar update badge and one-click installation.
+- Migrated updates and new installations to Velopack while preserving the Inno Setup update path for existing users.
+- Kept cached game artwork available offline and added size-limited cache cleanup and background refresh.
+- Added local Minecraft Launcher, CurseForge modpack, and Rinaorc launcher discovery.
+- Added an opt-in PC folder scan with game-marker detection and an explicit candidate review step.
+- Prepared optional Authenticode signing in the GitHub release workflow and documented certificate setup.
+
 ## 1.0.22
 
 - Fixed a startup crash caused by a malformed hexadecimal brush color in the home-tile template.

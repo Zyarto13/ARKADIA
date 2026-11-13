@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -9,11 +10,30 @@ namespace Arkadia.App.Tests;
 public sealed class GitHubUpdateServiceTests
 {
     [Fact]
-    public async Task CheckForUpdatesAsyncReportsWhenNoReleaseExists()
+    public async Task CheckForUpdatesAsyncDoesNotContactGitHubWhenNotInstalled()
+    {
+        using var client = CreateClient((_, _) =>
+            throw new InvalidOperationException("GitHub should not be queried for an unpackaged app."));
+        var service = new GitHubUpdateService(
+            client,
+            legacyInstallState: () => false,
+            velopackInstallState: () => false);
+
+        var result = await service.CheckForUpdatesAsync();
+
+        Assert.Equal(UpdateCheckStatus.NotInstalled, result.Status);
+        Assert.Null(result.Release);
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsyncReportsWhenNoReleaseExistsForLegacyInstall()
     {
         using var client = CreateClient((_, _) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)));
-        var service = new GitHubUpdateService(client);
+        var service = new GitHubUpdateService(
+            client,
+            legacyInstallState: () => true,
+            velopackInstallState: () => false);
 
         var result = await service.CheckForUpdatesAsync();
 
@@ -22,64 +42,74 @@ public sealed class GitHubUpdateServiceTests
     }
 
     [Fact]
-    public async Task CheckForUpdatesAsyncReturnsInstallerAndChecksumForANewerRelease()
+    public async Task CheckForUpdatesAsyncReturnsVelopackSetupForLegacyMigration()
     {
-        var currentVersion = GitHubUpdateService.CurrentVersion;
-        var version = new Version(
-            currentVersion.Major,
-            currentVersion.Minor,
-            currentVersion.Build + 1);
-        var installerName = $"ARKADIA-Setup-{version}-x64.exe";
-        var json = $$"""
-            {
-              "tag_name": "v{{version}}",
-              "assets": [
-                {
-                  "name": "{{installerName}}",
-                  "browser_download_url": "https://github.com/Zyarto13/ARKADIA/releases/download/v{{version}}/{{installerName}}"
-                },
-                {
-                  "name": "{{installerName}}.sha256",
-                  "browser_download_url": "https://github.com/Zyarto13/ARKADIA/releases/download/v{{version}}/{{installerName}}.sha256"
-                }
-              ]
-            }
-            """;
+        var version = GitHubUpdateService.CurrentVersion;
+        var json = CreateReleaseJson(version, "ARKADIA-win-Setup.exe");
         using var client = CreateClient((_, _) =>
-        {
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
-            });
-        });
-        var service = new GitHubUpdateService(client);
+            }));
+        var service = new GitHubUpdateService(
+            client,
+            legacyInstallState: () => true,
+            velopackInstallState: () => false);
 
         var result = await service.CheckForUpdatesAsync();
 
         Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
         Assert.NotNull(result.Release);
         Assert.Equal(version, result.Release.Version);
-        Assert.EndsWith(".exe", result.Release.InstallerUri.AbsolutePath, StringComparison.OrdinalIgnoreCase);
-        Assert.EndsWith(".exe.sha256", result.Release.ChecksumUri.AbsolutePath, StringComparison.OrdinalIgnoreCase);
+        Assert.True(result.Release.IsLegacyMigration);
+        Assert.Null(result.Release.VelopackUpdate);
+        Assert.EndsWith("ARKADIA-win-Setup.exe", result.Release.InstallerUri!.AbsolutePath);
+        Assert.EndsWith(
+            "ARKADIA-win-Setup.exe.sha256",
+            result.Release.ChecksumUri!.AbsolutePath);
     }
 
     [Fact]
-    public async Task CheckForUpdatesAsyncReportsCurrentVersionAsUpToDate()
+    public async Task CheckForUpdatesAsyncRejectsMigrationAssetsFromNonGitHubHosts()
     {
         var version = GitHubUpdateService.CurrentVersion;
+        var json = CreateReleaseJson(version, "ARKADIA-win-Setup.exe", "https://example.com/setup.exe");
         using var client = CreateClient((_, _) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(
-                    $$"""{"tag_name":"v{{version.ToString(3)}}","assets":[]}""",
-                    Encoding.UTF8,
-                    "application/json")
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
             }));
-        var service = new GitHubUpdateService(client);
+        var service = new GitHubUpdateService(
+            client,
+            legacyInstallState: () => true,
+            velopackInstallState: () => false);
 
-        var result = await service.CheckForUpdatesAsync();
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.CheckForUpdatesAsync());
+    }
 
-        Assert.Equal(UpdateCheckStatus.UpToDate, result.Status);
+    private static string CreateReleaseJson(
+        Version version,
+        string installerName,
+        string? installerUrl = null)
+    {
+        installerUrl ??=
+            $"https://github.com/Zyarto13/ARKADIA/releases/download/v{version}/{installerName}";
+        var checksumName = $"{installerName}.sha256";
+        return $$"""
+            {
+              "tag_name": "v{{version}}",
+              "assets": [
+                {
+                  "name": "{{installerName}}",
+                  "browser_download_url": "{{installerUrl}}"
+                },
+                {
+                  "name": "{{checksumName}}",
+                  "browser_download_url": "https://github.com/Zyarto13/ARKADIA/releases/download/v{{version}}/{{checksumName}}"
+                }
+              ]
+            }
+            """;
     }
 
     private static HttpClient CreateClient(

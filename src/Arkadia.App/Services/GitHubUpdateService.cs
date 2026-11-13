@@ -8,55 +8,132 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Win32;
 using Serilog;
+using Velopack;
+using Velopack.Sources;
 
 namespace Arkadia.App.Services;
 
 public enum UpdateCheckStatus
 {
     NoRelease,
+    NotInstalled,
     UpToDate,
     UpdateAvailable
 }
 
-public sealed record UpdateRelease(Version Version, Uri InstallerUri, Uri ChecksumUri);
+public sealed record UpdateRelease(
+    Version Version,
+    UpdateInfo? VelopackUpdate,
+    Uri? InstallerUri,
+    Uri? ChecksumUri,
+    bool IsLegacyMigration = false);
 
 public sealed record UpdateCheckResult(UpdateCheckStatus Status, UpdateRelease? Release = null);
 
-public sealed class GitHubUpdateService(HttpClient httpClient)
+public sealed class GitHubUpdateService
 {
     private const string ReleasesEndpoint =
         "https://api.github.com/repos/Zyarto13/ARKADIA/releases/latest";
+    private const string RepositoryUrl = "https://github.com/Zyarto13/ARKADIA";
     private const string UninstallRegistryKey =
         @"Software\Microsoft\Windows\CurrentVersion\Uninstall\{B1E07485-B83F-4F47-BD2A-3921A797B73E}_is1";
-    private const string InstallerPrefix = "ARKADIA-Setup-";
-    private const string InstallerSuffix = "-x64.exe";
+    private const string VelopackInstallerName = "ARKADIA-win-Setup.exe";
+
+    private readonly HttpClient _httpClient;
+    private readonly Func<UpdateManager> _updateManagerFactory;
+    private readonly Func<bool> _legacyInstallState;
+    private readonly Func<bool>? _velopackInstallState;
+
+    public GitHubUpdateService(
+        HttpClient httpClient,
+        Func<UpdateManager>? updateManagerFactory = null,
+        Func<bool>? legacyInstallState = null,
+        Func<bool>? velopackInstallState = null)
+    {
+        _httpClient = httpClient;
+        _updateManagerFactory = updateManagerFactory ?? CreateUpdateManager;
+        _legacyInstallState = legacyInstallState ?? IsLegacyInstalled;
+        _velopackInstallState = velopackInstallState;
+    }
 
     public static Version CurrentVersion =>
         Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 
-    public static bool IsInstalled
-    {
-        get
-        {
-            var registeredExecutable = GetRegisteredExecutablePath();
-            var runningExecutable = Environment.ProcessPath;
-            return registeredExecutable is not null
-                && runningExecutable is not null
-                && string.Equals(
-                    Path.GetFullPath(registeredExecutable),
-                    Path.GetFullPath(runningExecutable),
-                    StringComparison.OrdinalIgnoreCase);
-        }
-    }
+    public bool IsInstalled => _legacyInstallState() || IsVelopackInstalled();
+
+    public bool CanApply(UpdateRelease release) =>
+        release.IsLegacyMigration
+            ? _legacyInstallState() && GetLegacyUninstallerPath() is not null
+            : IsVelopackInstalled();
 
     public async Task<UpdateCheckResult> CheckForUpdatesAsync(
         CancellationToken cancellationToken = default)
+    {
+        if (_legacyInstallState())
+        {
+            return await CheckForLegacyMigrationAsync(cancellationToken);
+        }
+
+        if (IsVelopackInstalled())
+        {
+            var updateManager = _updateManagerFactory();
+            var update = await updateManager.CheckForUpdatesAsync().WaitAsync(cancellationToken);
+            return update is null
+                ? new UpdateCheckResult(UpdateCheckStatus.UpToDate)
+                : new UpdateCheckResult(
+                    UpdateCheckStatus.UpdateAvailable,
+                    new UpdateRelease(
+                        update.TargetFullRelease.Version.Version,
+                        update,
+                        InstallerUri: null,
+                        ChecksumUri: null));
+        }
+
+        return new UpdateCheckResult(UpdateCheckStatus.NotInstalled);
+    }
+
+    public async Task DownloadAndApplyUpdateAsync(
+        UpdateRelease release,
+        CancellationToken cancellationToken = default)
+    {
+        if (release.VelopackUpdate is { } velopackUpdate)
+        {
+            var updateManager = _updateManagerFactory();
+            if (!IsVelopackInstalled())
+            {
+                throw new InvalidOperationException("The Velopack installation is not available.");
+            }
+
+            await updateManager.DownloadUpdatesAsync(velopackUpdate, cancelToken: cancellationToken);
+            updateManager.ApplyUpdatesAndRestart(velopackUpdate.TargetFullRelease);
+            return;
+        }
+
+        if (!release.IsLegacyMigration
+            || release.InstallerUri is null
+            || release.ChecksumUri is null
+            || !_legacyInstallState()
+            || Environment.ProcessPath is not { } applicationPath
+            || GetLegacyUninstallerPath() is not { } uninstallerPath)
+        {
+            throw new InvalidOperationException("The update cannot be applied to this installation.");
+        }
+
+        await DownloadAndLaunchMigrationAsync(
+            release,
+            applicationPath,
+            uninstallerPath,
+            cancellationToken);
+    }
+
+    private async Task<UpdateCheckResult> CheckForLegacyMigrationAsync(
+        CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, ReleasesEndpoint);
         request.Headers.UserAgent.ParseAdd("ARKADIA-Updater/1.0");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return new UpdateCheckResult(UpdateCheckStatus.NoRelease);
@@ -66,6 +143,68 @@ public sealed class GitHubUpdateService(HttpClient httpClient)
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         var root = document.RootElement;
+        var version = ReadReleaseVersion(root);
+        if (version < CurrentVersion)
+        {
+            return new UpdateCheckResult(UpdateCheckStatus.UpToDate);
+        }
+
+        if (!root.TryGetProperty("assets", out var assetList)
+            || assetList.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException("The latest GitHub release does not contain an asset list.");
+        }
+
+        var assets = assetList.EnumerateArray().ToArray();
+        return new UpdateCheckResult(
+            UpdateCheckStatus.UpdateAvailable,
+            new UpdateRelease(
+                version,
+                VelopackUpdate: null,
+                FindAssetUri(assets, VelopackInstallerName),
+                FindAssetUri(assets, $"{VelopackInstallerName}.sha256"),
+                IsLegacyMigration: true));
+    }
+
+    private async Task DownloadAndLaunchMigrationAsync(
+        UpdateRelease release,
+        string applicationPath,
+        string uninstallerPath,
+        CancellationToken cancellationToken)
+    {
+        var downloadPath = Path.Combine(
+            Path.GetTempPath(),
+            $"ARKADIA-Migration-{release.Version}-{Guid.NewGuid():N}.exe");
+        var helperPath = Path.Combine(
+            Path.GetTempPath(),
+            $"ARKADIA-Migration-{Guid.NewGuid():N}.ps1");
+
+        try
+        {
+            await DownloadAssetAsync(release.InstallerUri!, downloadPath, cancellationToken);
+            await VerifyChecksumAsync(downloadPath, release.ChecksumUri!, cancellationToken);
+            await File.WriteAllTextAsync(
+                helperPath,
+                CreateMigrationHelper(downloadPath, applicationPath, uninstallerPath),
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                cancellationToken);
+
+            var startInfo = CreatePowerShellStartInfo(helperPath);
+            if (Process.Start(startInfo) is null)
+            {
+                throw new InvalidOperationException("The migration helper could not be started.");
+            }
+        }
+        catch
+        {
+            TryDelete(downloadPath);
+            TryDelete(helperPath);
+            throw;
+        }
+    }
+
+    private static Version ReadReleaseVersion(JsonElement root)
+    {
         if (!root.TryGetProperty("tag_name", out var tagElement)
             || tagElement.ValueKind != JsonValueKind.String)
         {
@@ -79,84 +218,14 @@ public sealed class GitHubUpdateService(HttpClient httpClient)
             throw new InvalidDataException("The latest GitHub release has an invalid version tag.");
         }
 
-        if (version <= CurrentVersion)
-        {
-            return new UpdateCheckResult(UpdateCheckStatus.UpToDate);
-        }
-
-        var installerName = $"{InstallerPrefix}{version}{InstallerSuffix}";
-        if (!root.TryGetProperty("assets", out var assetList)
-            || assetList.ValueKind != JsonValueKind.Array)
-        {
-            throw new InvalidDataException("The latest GitHub release does not contain an asset list.");
-        }
-
-        var assets = assetList.EnumerateArray().ToArray();
-        var installerUri = FindAssetUri(assets, installerName);
-        var checksumUri = FindAssetUri(assets, $"{installerName}.sha256");
-
-        return new UpdateCheckResult(
-            UpdateCheckStatus.UpdateAvailable,
-            new UpdateRelease(version, installerUri, checksumUri));
+        return version;
     }
 
-    public async Task DownloadAndLaunchInstallerAsync(
-        UpdateRelease release,
-        CancellationToken cancellationToken = default)
-    {
-        if (!IsInstalled || Environment.ProcessPath is not { } applicationPath)
-        {
-            throw new InvalidOperationException("Automatic updates require the installed ARKADIA application.");
-        }
+    private static UpdateManager CreateUpdateManager() =>
+        new(new GithubSource(RepositoryUrl, accessToken: null, prerelease: false));
 
-        var downloadPath = Path.Combine(
-            Path.GetTempPath(),
-            $"ARKADIA-Update-{release.Version}-{Guid.NewGuid():N}.exe");
-        var helperPath = Path.Combine(
-            Path.GetTempPath(),
-            $"ARKADIA-Update-{Guid.NewGuid():N}.ps1");
-
-        try
-        {
-            await DownloadAssetAsync(release.InstallerUri, downloadPath, cancellationToken);
-            await VerifyChecksumAsync(downloadPath, release.ChecksumUri, cancellationToken);
-            await File.WriteAllTextAsync(
-                helperPath,
-                CreateUpdateHelper(downloadPath, applicationPath),
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                cancellationToken);
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.System),
-                    "WindowsPowerShell",
-                    "v1.0",
-                    "powershell.exe"),
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            startInfo.ArgumentList.Add("-NoProfile");
-            startInfo.ArgumentList.Add("-NonInteractive");
-            startInfo.ArgumentList.Add("-ExecutionPolicy");
-            startInfo.ArgumentList.Add("Bypass");
-            startInfo.ArgumentList.Add("-WindowStyle");
-            startInfo.ArgumentList.Add("Hidden");
-            startInfo.ArgumentList.Add("-File");
-            startInfo.ArgumentList.Add(helperPath);
-
-            if (Process.Start(startInfo) is null)
-            {
-                throw new InvalidOperationException("The update helper could not be started.");
-            }
-        }
-        catch
-        {
-            TryDelete(downloadPath);
-            TryDelete(helperPath);
-            throw;
-        }
-    }
+    private bool IsVelopackInstalled() =>
+        _velopackInstallState?.Invoke() ?? _updateManagerFactory().IsInstalled;
 
     private static Uri FindAssetUri(JsonElement[] assets, string assetName)
     {
@@ -189,7 +258,7 @@ public sealed class GitHubUpdateService(HttpClient httpClient)
         string destination,
         CancellationToken cancellationToken)
     {
-        using var response = await httpClient.GetAsync(
+        using var response = await _httpClient.GetAsync(
             address,
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken);
@@ -210,7 +279,7 @@ public sealed class GitHubUpdateService(HttpClient httpClient)
         Uri checksumAddress,
         CancellationToken cancellationToken)
     {
-        using var response = await httpClient.GetAsync(checksumAddress, cancellationToken);
+        using var response = await _httpClient.GetAsync(checksumAddress, cancellationToken);
         response.EnsureSuccessStatusCode();
         var checksumText = await response.Content.ReadAsStringAsync(cancellationToken);
         var expectedHash = checksumText
@@ -235,40 +304,118 @@ public sealed class GitHubUpdateService(HttpClient httpClient)
         }
     }
 
-    private static string CreateUpdateHelper(string installerPath, string applicationPath)
+    private static ProcessStartInfo CreatePowerShellStartInfo(string helperPath)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "WindowsPowerShell",
+                "v1.0",
+                "powershell.exe"),
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-NonInteractive");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-WindowStyle");
+        startInfo.ArgumentList.Add("Hidden");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(helperPath);
+        return startInfo;
+    }
+
+    private static string CreateMigrationHelper(
+        string installerPath,
+        string applicationPath,
+        string uninstallerPath)
     {
         var encodedInstallerPath = Convert.ToBase64String(Encoding.UTF8.GetBytes(installerPath));
         var encodedApplicationPath = Convert.ToBase64String(Encoding.UTF8.GetBytes(applicationPath));
+        var encodedUninstallerPath = Convert.ToBase64String(Encoding.UTF8.GetBytes(uninstallerPath));
+        var installedExecutablePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ARKADIA",
+            "Arkadia.App.exe");
+        var encodedInstalledExecutablePath =
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(installedExecutablePath));
+
         return $$"""
             $ErrorActionPreference = 'Stop'
             $installerPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{{encodedInstallerPath}}'))
             $applicationPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{{encodedApplicationPath}}'))
+            $uninstallerPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{{encodedUninstallerPath}}'))
+            $installedExecutablePath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{{encodedInstalledExecutablePath}}'))
+            $migrationSucceeded = $false
             try {
                 Wait-Process -Id {{Environment.ProcessId}} -ErrorAction SilentlyContinue
-                $installDirectory = Split-Path -Parent $applicationPath
-                $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CLOSEAPPLICATIONS', ('/DIR="' + $installDirectory + '"'))
-                $result = Start-Process -FilePath $installerPath -ArgumentList $arguments -Wait -PassThru
-                if ($result.ExitCode -ne 0) {
-                    throw "Installer exited with code $($result.ExitCode)."
+                $uninstall = Start-Process -FilePath $uninstallerPath -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-') -Wait -PassThru
+                if ($uninstall.ExitCode -ne 0) {
+                    throw "Legacy uninstaller exited with code $($uninstall.ExitCode)."
                 }
+
+                $setup = Start-Process -FilePath $installerPath -ArgumentList @('--silent') -Wait -PassThru
+                if ($setup.ExitCode -ne 0) {
+                    throw "Velopack setup exited with code $($setup.ExitCode)."
+                }
+                $migrationSucceeded = $true
             }
             catch {
                 $logDirectory = Join-Path $env:APPDATA 'Arkadia\logs'
                 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-                Add-Content -LiteralPath (Join-Path $logDirectory 'update.log') -Value "$(Get-Date -Format o) $_"
+                Add-Content -LiteralPath (Join-Path $logDirectory 'update.log') -Value "$(Get-Date -Format o) Migration failed: $_"
                 Add-Type -AssemblyName System.Windows.Forms
                 [System.Windows.Forms.MessageBox]::Show(
-                    'ARKADIA could not be updated. The previous version will be reopened. See %AppData%\Arkadia\logs\update.log for details.',
+                    'ARKADIA could not be migrated. The downloaded setup has been kept in the temporary folder. See %AppData%\Arkadia\logs\update.log for details.',
                     'ARKADIA update',
                     [System.Windows.Forms.MessageBoxButtons]::OK,
                     [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
             }
             finally {
-                Start-Process -FilePath $applicationPath -WorkingDirectory (Split-Path -Parent $applicationPath)
-                Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
+                if ($migrationSucceeded -and (Test-Path -LiteralPath $installedExecutablePath)) {
+                    Start-Process -FilePath $installedExecutablePath -WorkingDirectory (Split-Path -Parent $installedExecutablePath)
+                }
+                elseif (Test-Path -LiteralPath $applicationPath) {
+                    Start-Process -FilePath $applicationPath -WorkingDirectory (Split-Path -Parent $applicationPath)
+                }
+
+                if ($migrationSucceeded) {
+                    Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
+                }
                 Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
             }
             """;
+    }
+
+    private static bool IsLegacyInstalled() =>
+        IsRunningRegisteredExecutable() && GetLegacyUninstallerPath() is not null;
+
+    private static bool IsRunningRegisteredExecutable()
+    {
+        var registeredExecutable = GetRegisteredExecutablePath();
+        var runningExecutable = Environment.ProcessPath;
+        return registeredExecutable is not null
+            && runningExecutable is not null
+            && string.Equals(
+                Path.GetFullPath(registeredExecutable),
+                Path.GetFullPath(runningExecutable),
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? GetLegacyUninstallerPath()
+    {
+        if (!IsRunningRegisteredExecutable()
+            || GetRegisteredExecutablePath() is not { } registeredExecutable)
+        {
+            return null;
+        }
+
+        var uninstallerPath = Path.Combine(
+            Path.GetDirectoryName(registeredExecutable)!,
+            "unins000.exe");
+        return File.Exists(uninstallerPath) ? uninstallerPath : null;
     }
 
     private static string? GetRegisteredExecutablePath()

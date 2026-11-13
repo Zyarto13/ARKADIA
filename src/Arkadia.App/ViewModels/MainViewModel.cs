@@ -21,6 +21,7 @@ using NAudio.CoreAudioApi;
 using Microsoft.Data.Sqlite;
 using Serilog;
 using Color = System.Windows.Media.Color;
+using Velopack.Exceptions;
 
 namespace Arkadia.App.ViewModels;
 
@@ -89,6 +90,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly System.Threading.Timer _mediaSessionTimer;
     private readonly System.Threading.Timer _audioMeterTimer;
     private readonly System.Threading.Timer _systemMetricsTimer;
+    private readonly System.Threading.Timer _updateCheckTimer;
     private readonly string _currentAppVersion;
     private string _gameSearchQuery = string.Empty;
     private string _selectedGameProvider = GameLibraryFilter.AllProviders;
@@ -154,6 +156,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private UpdateRelease? _availableUpdate;
     private bool _isCheckingForUpdates;
     private bool _isApplyingUpdate;
+    private bool _automaticUpdateChecksStarted;
     private ThemePalette? _customThemePalette;
     private Color _customAccentColor = Color.FromRgb(0, 210, 255);
     private string _customAccentHex = "#00D2FF";
@@ -286,6 +289,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Timeout.InfiniteTimeSpan);
         _systemMetricsTimer = new System.Threading.Timer(
             _ => RefreshSystemMetrics(),
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
+        _updateCheckTimer = new System.Threading.Timer(
+            _timerState => _synchronizationContext?.Post(
+                static state =>
+                {
+                    var viewModel = (MainViewModel)state!;
+                    if (viewModel.CanCheckForUpdates())
+                    {
+                        _ = viewModel.CheckForUpdatesAsync(CancellationToken.None);
+                    }
+                },
+                this),
             null,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
@@ -548,6 +565,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public bool HasUpdateAvailable => _availableUpdate is not null;
 
+    public string UpdateActionTooltip => !HasUpdateAvailable
+        ? LocalizationManager.Instance["Settings.Updates.Check"]
+        : _availableUpdate!.IsLegacyMigration
+            ? LocalizationManager.Instance["Settings.Updates.Migrate"]
+            : LocalizationManager.Instance["Settings.Updates.Install"];
+
+    public string UpdateInstallButtonText => _availableUpdate?.IsLegacyMigration == true
+        ? LocalizationManager.Instance["Settings.Updates.Migrate"]
+        : LocalizationManager.Instance["Settings.Updates.Install"];
+
     public bool IsCheckingForUpdates
     {
         get => _isCheckingForUpdates;
@@ -557,6 +584,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 CheckForUpdatesCommand.NotifyCanExecuteChanged();
                 ApplyUpdateCommand.NotifyCanExecuteChanged();
+                UpdateActionCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -570,6 +598,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 CheckForUpdatesCommand.NotifyCanExecuteChanged();
                 ApplyUpdateCommand.NotifyCanExecuteChanged();
+                UpdateActionCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -1667,9 +1696,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
     private async Task CheckForUpdatesAsync(CancellationToken cancellationToken)
     {
-        _availableUpdate = null;
-        OnPropertyChanged(nameof(HasUpdateAvailable));
-        ApplyUpdateCommand.NotifyCanExecuteChanged();
+        if (IsCheckingForUpdates || IsApplyingUpdate)
+        {
+            return;
+        }
+
         IsCheckingForUpdates = true;
         UpdateStatusText = LocalizationManager.Instance["Settings.Updates.Checking"];
 
@@ -1679,27 +1710,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
             switch (result.Status)
             {
                 case UpdateCheckStatus.NoRelease:
+                    SetAvailableUpdate(null);
                     UpdateStatusText = LocalizationManager.Instance["Settings.Updates.NoRelease"];
                     break;
+                case UpdateCheckStatus.NotInstalled:
+                    SetAvailableUpdate(null);
+                    UpdateStatusText = LocalizationManager.Instance["Settings.Updates.NotInstalled"];
+                    break;
                 case UpdateCheckStatus.UpToDate:
+                    SetAvailableUpdate(null);
                     UpdateStatusText = string.Format(
                         CultureInfo.CurrentCulture,
                         LocalizationManager.Instance["Settings.Updates.UpToDate"],
                         CurrentAppVersion);
                     break;
                 case UpdateCheckStatus.UpdateAvailable when result.Release is not null:
-                    _availableUpdate = result.Release;
-                    OnPropertyChanged(nameof(HasUpdateAvailable));
-                    ApplyUpdateCommand.NotifyCanExecuteChanged();
-                    UpdateStatusText = GitHubUpdateService.IsInstalled
-                        ? string.Format(
-                            CultureInfo.CurrentCulture,
-                            LocalizationManager.Instance["Settings.Updates.Available"],
-                            result.Release.Version)
-                        : string.Format(
-                            CultureInfo.CurrentCulture,
-                            LocalizationManager.Instance["Settings.Updates.InstallRequired"],
-                            result.Release.Version);
+                    SetAvailableUpdate(result.Release);
+                    UpdateStatusText = string.Format(
+                        CultureInfo.CurrentCulture,
+                        LocalizationManager.Instance[
+                            result.Release.IsLegacyMigration
+                                ? "Settings.Updates.MigrationAvailable"
+                                : "Settings.Updates.Available"],
+                        result.Release.Version);
                     break;
                 default:
                     throw new InvalidDataException("The update check returned an unexpected result.");
@@ -1708,6 +1741,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
+        }
+        catch (OperationCanceledException exception)
+        {
+            Log.Warning(exception, "The ARKADIA update check timed out.");
+            UpdateStatusText = LocalizationManager.Instance["Settings.Updates.CheckFailed"];
         }
         catch (Exception exception) when (
             exception is HttpRequestException or IOException or JsonException or InvalidOperationException)
@@ -1719,6 +1757,51 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             IsCheckingForUpdates = false;
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
+    private async Task UpdateActionAsync(CancellationToken cancellationToken)
+    {
+        if (HasUpdateAvailable)
+        {
+            if (_availableUpdate is { } release && _updateService.CanApply(release))
+            {
+                await ApplyUpdateAsync(cancellationToken);
+            }
+            else
+            {
+                UpdateStatusText = LocalizationManager.Instance["Settings.Updates.NotInstalled"];
+            }
+
+            return;
+        }
+
+        await CheckForUpdatesAsync(cancellationToken);
+    }
+
+    public void StartAutomaticUpdateChecks()
+    {
+        if (_automaticUpdateChecksStarted)
+        {
+            return;
+        }
+
+        _automaticUpdateChecksStarted = true;
+        _updateCheckTimer.Change(TimeSpan.Zero, TimeSpan.FromHours(6));
+    }
+
+    private void SetAvailableUpdate(UpdateRelease? release)
+    {
+        if (_availableUpdate == release)
+        {
+            return;
+        }
+
+        _availableUpdate = release;
+        OnPropertyChanged(nameof(HasUpdateAvailable));
+        OnPropertyChanged(nameof(UpdateActionTooltip));
+        OnPropertyChanged(nameof(UpdateInstallButtonText));
+        ApplyUpdateCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanApplyUpdate))]
@@ -1733,7 +1816,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateStatusText = LocalizationManager.Instance["Settings.Updates.Installing"];
         try
         {
-            await _updateService.DownloadAndLaunchInstallerAsync(_availableUpdate, cancellationToken);
+            await _updateService.DownloadAndApplyUpdateAsync(_availableUpdate, cancellationToken);
             if (System.Windows.Application.Current is { } application)
             {
                 if (application.MainWindow is Arkadia.App.MainWindow mainWindow)
@@ -1753,6 +1836,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             exception is HttpRequestException
                 or IOException
                 or InvalidOperationException
+                or AcquireLockFailedException
+                or ChecksumFailedException
+                or NotInstalledException
                 or System.Security.Cryptography.CryptographicException
                 or Win32Exception)
         {
@@ -2435,6 +2521,86 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public async Task AddScannedGamesAsync(
+        IReadOnlyList<GameScanCandidate> candidates,
+        CancellationToken cancellationToken)
+    {
+        var knownPaths = _manualGames
+            .Select(game => game.ExecutablePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var additions = new List<ManualGameDefinition>();
+
+        foreach (var candidate in candidates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(candidate.Title)
+                || string.IsNullOrWhiteSpace(candidate.ExecutablePath))
+            {
+                continue;
+            }
+
+            string executablePath;
+            try
+            {
+                executablePath = Path.GetFullPath(candidate.ExecutablePath);
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+            catch (IOException)
+            {
+                continue;
+            }
+            catch (NotSupportedException)
+            {
+                continue;
+            }
+
+            if (!string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(executablePath)
+                || !knownPaths.Add(executablePath))
+            {
+                continue;
+            }
+
+            additions.Add(new ManualGameDefinition(
+                Guid.NewGuid(),
+                candidate.Title.Trim(),
+                executablePath));
+        }
+
+        if (additions.Count == 0)
+        {
+            LaunchMessage = LocalizationManager.Instance["Games.ScanReview.NoNewGames"];
+            return;
+        }
+
+        var updatedGames = _manualGames.Concat(additions).ToArray();
+        try
+        {
+            await _settingsService.SaveAsync(
+                CurrentSettings with { ManualGames = updatedGames },
+                cancellationToken);
+            _manualGames = updatedGames;
+            await RefreshGamesAsync(cancellationToken);
+            LaunchMessage = string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationManager.Instance["Games.ScanReview.Imported"],
+                additions.Count);
+        }
+        catch (IOException exception)
+        {
+            Log.Error(exception, "Could not save games discovered by the PC scan.");
+            LaunchMessage = LocalizationManager.Instance["Games.ManualSaveFailed"];
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Error(exception, "Access was denied while saving games discovered by the PC scan.");
+            LaunchMessage = LocalizationManager.Instance["Games.ManualSaveFailed"];
+        }
+    }
+
     [RelayCommand]
     private async Task SaveSteamApiKeyAsync(CancellationToken cancellationToken)
     {
@@ -2672,6 +2838,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _mediaSessionTimer.Dispose();
         _audioMeterTimer.Dispose();
         _systemMetricsTimer.Dispose();
+        _updateCheckTimer.Dispose();
         _systemMetricsService.Dispose();
         NetworkChange.NetworkAvailabilityChanged -= NetworkAvailabilityChanged;
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
@@ -2955,6 +3122,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(MusicPlayerTrackTitle));
         OnPropertyChanged(nameof(MusicPlayerTrackArtist));
         OnPropertyChanged(nameof(MusicMuteTooltip));
+        OnPropertyChanged(nameof(UpdateActionTooltip));
+        OnPropertyChanged(nameof(UpdateInstallButtonText));
         UpdateGamesStatusText();
         RefreshFilteredGames();
         RefreshHomeTileContent();
@@ -2965,7 +3134,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private bool CanApplyUpdate() =>
         _availableUpdate is not null
-        && GitHubUpdateService.IsInstalled
+        && _updateService.CanApply(_availableUpdate)
         && !IsCheckingForUpdates
         && !IsApplyingUpdate;
 

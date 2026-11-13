@@ -195,11 +195,13 @@
   <data name="Settings.Updates.CurrentVersion" xml:space="preserve"><value>Version installée</value></data>
   <data name="Settings.Updates.Check" xml:space="preserve"><value>Rechercher des mises à jour</value></data>
   <data name="Settings.Updates.Install" xml:space="preserve"><value>Télécharger et installer</value></data>
+  <data name="Settings.Updates.Migrate" xml:space="preserve"><value>Migrer le programme d’installation</value></data>
   <data name="Settings.Updates.Checking" xml:space="preserve"><value>Recherche d’une nouvelle version sur GitHub…</value></data>
   <data name="Settings.Updates.NoRelease" xml:space="preserve"><value>Aucune version d’ARKADIA n’a encore été publiée.</value></data>
+  <data name="Settings.Updates.NotInstalled" xml:space="preserve"><value>Installez ARKADIA avec son programme d’installation pour activer les mises à jour.</value></data>
   <data name="Settings.Updates.UpToDate" xml:space="preserve"><value>Vous avez la dernière version ({0}).</value></data>
   <data name="Settings.Updates.Available" xml:space="preserve"><value>La version {0} est disponible.</value></data>
-  <data name="Settings.Updates.InstallRequired" xml:space="preserve"><value>La version {0} est disponible. Installez d’abord ARKADIA avec son programme d’installation pour activer les mises à jour intégrées.</value></data>
+  <data name="Settings.Updates.MigrationAvailable" xml:space="preserve"><value>La version {0} est disponible. Cette mise à jour fait également passer ARKADIA au nouveau système de mise à jour.</value></data>
   <data name="Settings.Updates.CheckFailed" xml:space="preserve"><value>Impossible de rechercher les mises à jour. Vérifiez votre connexion Internet et réessayez.</value></data>
   <data name="Settings.Updates.Installing" xml:space="preserve"><value>Téléchargement et vérification de la mise à jour. ARKADIA va redémarrer pour l’installer.</value></data>
   <data name="Settings.Updates.InstallFailed" xml:space="preserve"><value>Impossible de démarrer la mise à jour. Consultez le journal de l’application pour plus de détails.</value></data>
@@ -220,6 +222,18 @@
   <data name="Games.ManualDuplicate" xml:space="preserve"><value>Ce jeu est déjà dans votre bibliothèque.</value></data>
   <data name="Games.ManualAdded" xml:space="preserve"><value>Jeu ajouté à votre bibliothèque.</value></data>
   <data name="Games.ManualSaveFailed" xml:space="preserve"><value>Impossible d’enregistrer ce jeu.</value></data>
+  <data name="Games.ScanPc" xml:space="preserve"><value>Scanner un dossier</value></data>
+  <data name="Games.ScanPc.SelectFolder" xml:space="preserve"><value>Choisissez le dossier à analyser pour rechercher des jeux installés.</value></data>
+  <data name="Games.ScanPc.NoCandidates" xml:space="preserve"><value>Aucun exécutable de jeu reconnu dans ce dossier.</value></data>
+  <data name="Games.ScanPc.Failed" xml:space="preserve"><value>Impossible d’analyser ce dossier. Vérifiez qu’il existe et que vous avez les droits d’accès.</value></data>
+  <data name="Games.ScanReview.Title" xml:space="preserve"><value>Jeux potentiellement détectés</value></data>
+  <data name="Games.ScanReview.Description" xml:space="preserve"><value>Vérifiez les résultats et cochez uniquement les jeux à ajouter. Rien ne sera ajouté sans votre confirmation.</value></data>
+  <data name="Games.ScanReview.Summary" xml:space="preserve"><value>{0} candidat(s) détecté(s) · dossiers inaccessibles : {1} {2}</value></data>
+  <data name="Games.ScanReview.Truncated" xml:space="preserve"><value>· Résultats limités pour garder l’analyse rapide.</value></data>
+  <data name="Games.ScanReview.Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Games.ScanReview.Add" xml:space="preserve"><value>Ajouter la sélection</value></data>
+  <data name="Games.ScanReview.NoNewGames" xml:space="preserve"><value>Aucun nouveau jeu sélectionné.</value></data>
+  <data name="Games.ScanReview.Imported" xml:space="preserve"><value>{0} jeu(x) ajouté(s) à la bibliothèque.</value></data>
   <data name="Games.SortPlaytime" xml:space="preserve"><value>Trier par temps de jeu ↓</value></data>
   <data name="Games.Search" xml:space="preserve"><value>Rechercher un jeu installé</value></data>
   <data name="Games.FilterProvider" xml:space="preserve"><value>Filtrer par plateforme</value></data>

@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,30 +19,168 @@ namespace Arkadia.App.Services;
 public sealed class GameArtworkService
 {
     private const int MaximumArtworkBytes = 16 * 1024 * 1024;
+    private const long MaximumCacheBytes = 500L * 1024 * 1024;
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromHours(6);
+    private static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
     private readonly HttpClient _httpClient;
     private readonly string _cacheDirectory;
+    private readonly Func<bool> _networkAvailable;
+    private readonly long _maximumCacheBytes;
     private static readonly SemaphoreSlim RequestLimit = new(4);
     private readonly ConcurrentDictionary<string, Lazy<Task<BitmapImage?>>> _artworkCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Lazy<Task>> _backgroundRefreshes = new(StringComparer.OrdinalIgnoreCase);
 
-    public GameArtworkService(HttpClient httpClient, string? cacheDirectory = null)
+    public GameArtworkService(
+        HttpClient httpClient,
+        string? cacheDirectory = null,
+        Func<bool>? networkAvailable = null,
+        long maximumCacheBytes = MaximumCacheBytes)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumCacheBytes);
         _httpClient = httpClient;
+        _networkAvailable = networkAvailable ?? NetworkInterface.GetIsNetworkAvailable;
+        _maximumCacheBytes = maximumCacheBytes;
         _cacheDirectory = cacheDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Arkadia",
             "artwork");
+        TrimCache();
     }
+
+    public event EventHandler<GameArtworkUpdatedEventArgs>? ArtworkUpdated;
 
     public Task<BitmapImage?> LoadArtworkAsync(GameEntry game)
     {
         var key = $"{game.ProviderId}:{game.ExternalId}:{game.Title}:{game.ArtworkFilePath}";
+        var cachePath = GetCachePath(game);
+        var cachedArtwork = TryLoadCachedArtwork(cachePath);
+        if (cachedArtwork is not null)
+        {
+            ScheduleBackgroundRefresh(key, game, cachePath);
+            return Task.FromResult<BitmapImage?>(cachedArtwork);
+        }
+
         var artworkTask = _artworkCache.GetOrAdd(
             key,
             _ => new Lazy<Task<BitmapImage?>>(
                 () => LoadArtworkUncachedAsync(game),
                 LazyThreadSafetyMode.ExecutionAndPublication));
         return LoadArtworkAndAllowRetryAsync(key, artworkTask);
+    }
+
+    private void ScheduleBackgroundRefresh(string key, GameEntry game, string cachePath)
+    {
+        if (!_networkAvailable() || !IsRefreshDue(cachePath))
+        {
+            return;
+        }
+
+        var refresh = _backgroundRefreshes.GetOrAdd(
+            key,
+            _ => new Lazy<Task>(
+                () => Task.Run(() => RevalidateCachedArtworkAsync(key, game, cachePath)),
+                LazyThreadSafetyMode.ExecutionAndPublication));
+        _ = refresh.Value;
+    }
+
+    private async Task RevalidateCachedArtworkAsync(string key, GameEntry game, string cachePath)
+    {
+        try
+        {
+            RecordRefreshAttempt(cachePath);
+            var refreshedArtwork = await LoadArtworkUncachedAsync(game, forceRefresh: true);
+            if (refreshedArtwork is not null)
+            {
+                ArtworkUpdated?.Invoke(this, new GameArtworkUpdatedEventArgs(game, refreshedArtwork));
+            }
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+                or IOException
+                or UnauthorizedAccessException
+                or InvalidOperationException
+                or JsonException
+                or OperationCanceledException)
+        {
+            Log.Debug(exception, "Could not refresh cached game artwork for {GameTitle}.", game.Title);
+        }
+        finally
+        {
+            if (_backgroundRefreshes.TryGetValue(key, out var refresh))
+            {
+                ((ICollection<KeyValuePair<string, Lazy<Task>>>)_backgroundRefreshes)
+                    .Remove(new KeyValuePair<string, Lazy<Task>>(key, refresh));
+            }
+        }
+    }
+
+    private static bool IsRefreshDue(string cachePath)
+    {
+        var metadataPath = GetMetadataPath(cachePath);
+        if (!File.Exists(metadataPath))
+        {
+            return true;
+        }
+
+        try
+        {
+            var metadata = JsonSerializer.Deserialize<ArtworkCacheMetadata>(
+                File.ReadAllText(metadataPath));
+            if (metadata is null)
+            {
+                return true;
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            return now - metadata.LastAttemptUtc >= RetryInterval
+                && now - metadata.FetchedUtc >= RefreshInterval;
+        }
+        catch (IOException exception)
+        {
+            Log.Debug(exception, "Could not read the cached artwork metadata.");
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Debug(exception, "Access was denied while reading cached artwork metadata.");
+        }
+        catch (JsonException exception)
+        {
+            Log.Debug(exception, "Cached artwork metadata was invalid.");
+        }
+
+        return true;
+    }
+
+    private static void RecordRefreshAttempt(string cachePath)
+    {
+        var metadataPath = GetMetadataPath(cachePath);
+        try
+        {
+            ArtworkCacheMetadata? metadata = null;
+            if (File.Exists(metadataPath))
+            {
+                metadata = JsonSerializer.Deserialize<ArtworkCacheMetadata>(
+                    File.ReadAllText(metadataPath));
+            }
+
+            WriteMetadata(
+                metadataPath,
+                (metadata ?? new ArtworkCacheMetadata(DateTimeOffset.MinValue, DateTimeOffset.MinValue))
+                    with { LastAttemptUtc = DateTimeOffset.UtcNow });
+        }
+        catch (IOException exception)
+        {
+            Log.Debug(exception, "Could not record a cached artwork refresh attempt.");
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Debug(exception, "Access was denied while recording a cached artwork refresh attempt.");
+        }
+        catch (JsonException exception)
+        {
+            Log.Debug(exception, "Cached artwork metadata was invalid during refresh.");
+        }
     }
 
     private async Task<BitmapImage?> LoadArtworkAndAllowRetryAsync(
@@ -63,11 +202,13 @@ public sealed class GameArtworkService
         }
     }
 
-    private async Task<BitmapImage?> LoadArtworkUncachedAsync(GameEntry game)
+    private async Task<BitmapImage?> LoadArtworkUncachedAsync(
+        GameEntry game,
+        bool forceRefresh = false)
     {
         var cachePath = GetCachePath(game);
         var cachedArtwork = TryLoadCachedArtwork(cachePath);
-        if (cachedArtwork is not null)
+        if (cachedArtwork is not null && !forceRefresh)
         {
             return cachedArtwork;
         }
@@ -79,58 +220,64 @@ public sealed class GameArtworkService
             return localSteamArtwork.Value.Image;
         }
 
-        await RequestLimit.WaitAsync();
-        try
+        if (_networkAvailable())
         {
-            using var timeout = new CancellationTokenSource(RequestTimeout);
-            IReadOnlyList<Uri> artworkUris = game.ArtworkUris;
-            if (artworkUris.Count == 0)
+            await RequestLimit.WaitAsync();
+            try
             {
-                artworkUris = await FindSteamArtworkUrisAsync(game.Title, timeout.Token);
-            }
-
-            foreach (var artworkUri in artworkUris)
-            {
-                try
+                using var timeout = new CancellationTokenSource(RequestTimeout);
+                IReadOnlyList<Uri> artworkUris = game.ArtworkUris;
+                if (artworkUris.Count == 0)
                 {
-                    var bytes = await DownloadArtworkAsync(artworkUri, timeout.Token);
-                    if (bytes is null)
+                    artworkUris = await FindSteamArtworkUrisAsync(game.Title, timeout.Token);
+                }
+
+                foreach (var artworkUri in artworkUris)
+                {
+                    try
                     {
-                        continue;
-                    }
+                        var bytes = await DownloadArtworkAsync(artworkUri, timeout.Token);
+                        if (bytes is null)
+                        {
+                            continue;
+                        }
 
-                    var image = DecodeArtwork(bytes);
-                    TryCacheArtwork(cachePath, bytes);
-                    return image;
-                }
-                catch (HttpRequestException exception)
-                {
-                    Log.Debug(exception, "Could not load game artwork from {ArtworkUri}.", artworkUri);
-                }
-                catch (IOException exception)
-                {
-                    Log.Debug(exception, "Could not read game artwork from {ArtworkUri}.", artworkUri);
-                }
-                catch (System.IO.FileFormatException exception)
-                {
-                    Log.Debug(exception, "The image at {ArtworkUri} was not valid artwork.", artworkUri);
+                        var image = DecodeArtwork(bytes);
+                        TryCacheArtwork(cachePath, bytes);
+                        return image;
+                    }
+                    catch (HttpRequestException exception)
+                    {
+                        Log.Debug(exception, "Could not load game artwork from {ArtworkUri}.", artworkUri);
+                    }
+                    catch (IOException exception)
+                    {
+                        Log.Debug(exception, "Could not read game artwork from {ArtworkUri}.", artworkUri);
+                    }
+                    catch (System.IO.FileFormatException exception)
+                    {
+                        Log.Debug(exception, "The image at {ArtworkUri} was not valid artwork.", artworkUri);
+                    }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Log.Debug("Timed out while loading artwork for {GameTitle}.", game.Title);
+            }
+            finally
+            {
+                RequestLimit.Release();
+            }
+        }
 
+        if (!forceRefresh)
+        {
             var executableIcon = TryLoadExecutableIcon(game.ArtworkFilePath);
             if (executableIcon is not null)
             {
                 TryCacheArtwork(cachePath, executableIcon.Value.Bytes);
                 return executableIcon.Value.Image;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            Log.Debug("Timed out while loading artwork for {GameTitle}.", game.Title);
-        }
-        finally
-        {
-            RequestLimit.Release();
         }
 
         return null;
@@ -397,6 +544,7 @@ public sealed class GameArtworkService
             try
             {
                 File.Delete(cachePath);
+                File.Delete(GetMetadataPath(cachePath));
             }
             catch (IOException deleteException)
             {
@@ -417,6 +565,11 @@ public sealed class GameArtworkService
         {
             Directory.CreateDirectory(_cacheDirectory);
             File.WriteAllBytes(cachePath, bytes);
+            var now = DateTimeOffset.UtcNow;
+            WriteMetadata(
+                GetMetadataPath(cachePath),
+                new ArtworkCacheMetadata(now, now));
+            TrimCache();
         }
         catch (IOException exception)
         {
@@ -428,12 +581,63 @@ public sealed class GameArtworkService
         }
     }
 
+    private static void WriteMetadata(string metadataPath, ArtworkCacheMetadata metadata) =>
+        File.WriteAllText(metadataPath, JsonSerializer.Serialize(metadata));
+
+    private static string GetMetadataPath(string cachePath) => $"{cachePath}.meta.json";
+
+    private void TrimCache()
+    {
+        try
+        {
+            var artworkFiles = Directory.EnumerateFiles(_cacheDirectory, "*.img")
+                .Select(path => new FileInfo(path))
+                .OrderBy(file => file.LastAccessTimeUtc)
+                .ToArray();
+            var totalBytes = artworkFiles.Sum(file => file.Length);
+            foreach (var artworkFile in artworkFiles)
+            {
+                if (totalBytes <= _maximumCacheBytes)
+                {
+                    break;
+                }
+
+                try
+                {
+                    File.Delete(artworkFile.FullName);
+                    File.Delete(GetMetadataPath(artworkFile.FullName));
+                    totalBytes -= artworkFile.Length;
+                }
+                catch (IOException exception)
+                {
+                    Log.Warning(exception, "Could not evict cached artwork {ArtworkPath}.", artworkFile.FullName);
+                }
+                catch (UnauthorizedAccessException exception)
+                {
+                    Log.Warning(exception, "Access was denied while evicting cached artwork {ArtworkPath}.", artworkFile.FullName);
+                }
+            }
+        }
+        catch (IOException exception)
+        {
+            Log.Warning(exception, "Could not inspect the game artwork cache.");
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Log.Warning(exception, "Access was denied while inspecting the game artwork cache.");
+        }
+    }
+
     private string GetCachePath(GameEntry game)
     {
         var key = Encoding.UTF8.GetBytes($"{game.ProviderId}:{game.ExternalId}:{game.Title}:{game.ArtworkFilePath}");
         var fileName = Convert.ToHexString(SHA256.HashData(key));
         return Path.Combine(_cacheDirectory, $"{fileName}.img");
     }
+
+    private sealed record ArtworkCacheMetadata(
+        DateTimeOffset FetchedUtc,
+        DateTimeOffset LastAttemptUtc);
 
     private static string? ReadString(JsonElement element, string propertyName)
     {
@@ -509,4 +713,10 @@ public sealed class GameArtworkService
 
         return builder.ToString();
     }
+}
+
+public sealed class GameArtworkUpdatedEventArgs(GameEntry game, BitmapImage artwork) : EventArgs
+{
+    public GameEntry Game { get; } = game;
+    public BitmapImage Artwork { get; } = artwork;
 }

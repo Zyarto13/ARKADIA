@@ -41,6 +41,9 @@ public sealed record GameEntry(
     {
         "steam" => "Steam",
         "epic" => "Epic Games",
+        "minecraft" => "Minecraft",
+        "curseforge" => "CurseForge",
+        "rinaorc" => "Rinaorc",
         "manual" => "Manual",
         _ => ProviderId
     };

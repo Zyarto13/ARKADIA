@@ -1,6 +1,7 @@
 <Window x:Class="Arkadia.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:controls="clr-namespace:Arkadia.App.Controls"
         xmlns:icons="clr-namespace:Arkadia.App.Icons"
         xmlns:loc="clr-namespace:Arkadia.App.Localization"
@@ -10,13 +11,19 @@
         Height="800"
         MinWidth="960"
         MinHeight="600"
-        WindowStyle="SingleBorderWindow"
+        WindowStyle="None"
         ResizeMode="CanResize"
         Closing="MainWindow_Closing"
         Background="{DynamicResource WindowBackgroundBrush}"
         Foreground="{DynamicResource TextPrimaryBrush}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="64"
+                            ResizeBorderThickness="6"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
     <Window.InputBindings>
         <KeyBinding Key="D1" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Home" />
         <KeyBinding Key="D2" Modifiers="Control" Command="{Binding SelectPageCommand}" CommandParameter="Games" />
@@ -44,6 +51,7 @@
 
                 <Button Grid.Row="0"
                         Style="{StaticResource BrandButtonStyle}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
                         Command="{Binding SelectPageCommand}"
                         CommandParameter="Home"
                         AutomationProperties.Name="ARKADIA">
@@ -323,6 +331,8 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
@@ -351,7 +361,115 @@
                            Text="{Binding ClockText}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center"
-                           Margin="0,0,4,0" />
+                           Margin="0,0,18,0" />
+                <Button x:Name="UpdateActionButton"
+                        Grid.Column="3"
+                        Width="40"
+                        Height="40"
+                        Padding="4"
+                        Margin="0,0,10,0"
+                        Style="{StaticResource SurfaceButtonStyle}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Command="{Binding UpdateActionCommand}"
+                        ToolTip="{Binding UpdateActionTooltip}"
+                        AutomationProperties.Name="{Binding UpdateActionTooltip}">
+                    <Grid Width="28" Height="28">
+                        <Border Width="28"
+                                Height="28"
+                                CornerRadius="14"
+                                Background="{DynamicResource CardHoverBrush}" />
+                        <Path Width="15"
+                              Height="15"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stretch="Uniform"
+                              Stroke="{DynamicResource TextPrimaryBrush}"
+                              StrokeThickness="1.5">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Data" Value="M 2,7 A 5,5 0 1 1 3.5,12 M 2,3 V 7 H 6" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasUpdateAvailable}" Value="True">
+                                            <Setter Property="Data" Value="M 8,1 V 9 M 5,6 L 8,9 L 11,6 M 3,10 V 13 H 13 V 10" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <Ellipse Width="8"
+                                 Height="8"
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Top"
+                                 Fill="{DynamicResource AccentBrush}"
+                                 Stroke="{DynamicResource WindowBackgroundBrush}"
+                                 StrokeThickness="1"
+                                 Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
+                </Button>
+                <StackPanel Grid.Column="4"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button x:Name="MinimizeWindowButton"
+                            Width="38"
+                            Height="36"
+                            Padding="8"
+                            Margin="0,0,4,0"
+                            Style="{StaticResource SurfaceButtonStyle}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Click="MinimizeWindow_Click"
+                            ToolTip="{Binding [Window.Minimize], Source={x:Static loc:LocalizationManager.Instance}}"
+                            AutomationProperties.Name="{Binding [Window.Minimize], Source={x:Static loc:LocalizationManager.Instance}}">
+                        <Path Data="M 2,7 H 14"
+                              Stroke="{DynamicResource TextPrimaryBrush}"
+                              StrokeThickness="1.4"
+                              Stretch="Uniform"
+                              Width="14"
+                              Height="14" />
+                    </Button>
+                    <Button x:Name="MaximizeWindowButton"
+                            Width="38"
+                            Height="36"
+                            Padding="8"
+                            Margin="0,0,4,0"
+                            Style="{StaticResource SurfaceButtonStyle}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Click="ToggleMaximizeWindow_Click"
+                            ToolTip="{Binding [Window.Maximize], Source={x:Static loc:LocalizationManager.Instance}}"
+                            AutomationProperties.Name="{Binding [Window.Maximize], Source={x:Static loc:LocalizationManager.Instance}}">
+                        <Path Stretch="Uniform"
+                              Stroke="{DynamicResource TextPrimaryBrush}"
+                              StrokeThickness="1.2"
+                              Width="14"
+                              Height="14">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Data" Value="M 2,2 H 14 V 14 H 2 Z" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                                            <Setter Property="Data" Value="M 5,2 H 14 V 11 H 5 Z M 2,5 V 14 H 11" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Button>
+                    <Button x:Name="CloseWindowButton"
+                            Width="38"
+                            Height="36"
+                            Padding="8"
+                            Style="{StaticResource SurfaceButtonStyle}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Click="CloseWindow_Click"
+                            ToolTip="{Binding [Window.Close], Source={x:Static loc:LocalizationManager.Instance}}"
+                            AutomationProperties.Name="{Binding [Window.Close], Source={x:Static loc:LocalizationManager.Instance}}">
+                        <Path Data="M 3,3 L 13,13 M 13,3 L 3,13"
+                              Stroke="{DynamicResource TextPrimaryBrush}"
+                              StrokeThickness="1.4"
+                              Stretch="Uniform"
+                              Width="14"
+                              Height="14" />
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <Grid Grid.Row="1">
@@ -1110,7 +1228,7 @@
                                                     Command="{Binding CheckForUpdatesCommand}"
                                                     Style="{StaticResource SurfaceButtonStyle}"
                                                     HorizontalAlignment="Left" />
-                                            <Button Content="{Binding [Settings.Updates.Install], Source={x:Static loc:LocalizationManager.Instance}}"
+                                            <Button Content="{Binding UpdateInstallButtonText}"
                                                     Command="{Binding ApplyUpdateCommand}"
                                                     Style="{StaticResource SurfaceButtonStyle}"
                                                     HorizontalAlignment="Left"
@@ -1693,6 +1811,15 @@
                                             </StackPanel>
                                         </Button>
                                         <Button Style="{StaticResource SurfaceButtonStyle}"
+                                                Click="ScanPcGames_Click"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"
+                                                ToolTip="{Binding [Games.ScanPc], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                AutomationProperties.Name="{Binding [Games.ScanPc], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                DockPanel.Dock="Right">
+                                            <TextBlock Text="{Binding [Games.ScanPc], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                        </Button>
+                                        <Button Style="{StaticResource SurfaceButtonStyle}"
                                                 Command="{Binding RefreshGamesCommand}"
                                                 Padding="12,8"
                                                 DockPanel.Dock="Right">
@@ -1769,6 +1896,9 @@
                                             <ComboBoxItem Content="{Binding [Games.Provider.All], Source={x:Static loc:LocalizationManager.Instance}}" Tag="all" />
                                             <ComboBoxItem Content="Steam" Tag="steam" />
                                             <ComboBoxItem Content="Epic Games" Tag="epic" />
+                                            <ComboBoxItem Content="Minecraft" Tag="minecraft" />
+                                            <ComboBoxItem Content="CurseForge" Tag="curseforge" />
+                                            <ComboBoxItem Content="Rinaorc" Tag="rinaorc" />
                                             <ComboBoxItem Content="{Binding [Games.Provider.Manual], Source={x:Static loc:LocalizationManager.Instance}}" Tag="manual" />
                                         </ComboBox>
                                     </Grid>

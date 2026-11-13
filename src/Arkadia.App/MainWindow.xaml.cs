@@ -1,7 +1,9 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Arkadia.Core.Models;
+using Arkadia.Infrastructure.Providers;
 using Arkadia.App.Localization;
 using Arkadia.App.Services;
 using Arkadia.App.ViewModels;
@@ -23,8 +25,10 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         _trayIconService = trayIconService;
         _gameArtworkService = gameArtworkService;
+        _gameArtworkService.ArtworkUpdated += GameArtworkUpdated;
         trayIconService.Attach(this);
         Loaded += MainWindow_Loaded;
+        Closed += MainWindow_Closed;
         IsVisibleChanged += MainWindow_IsVisibleChanged;
         StateChanged += MainWindow_StateChanged;
     }
@@ -92,6 +96,56 @@ public partial class MainWindow : Window
         image.Visibility = artwork is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    private void GameArtworkUpdated(object? sender, GameArtworkUpdatedEventArgs e)
+    {
+        if (Dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            foreach (var image in FindVisualChildren<System.Windows.Controls.Image>(this))
+            {
+                if (!Equals(image.DataContext, e.Game))
+                {
+                    continue;
+                }
+
+                image.Source = e.Artwork;
+                image.Visibility = Visibility.Visible;
+                if (image.Parent is Grid card)
+                {
+                    var fallback = card.Children
+                        .OfType<FrameworkElement>()
+                        .FirstOrDefault(child => child.Name == "GameArtworkFallback");
+                    if (fallback is not null)
+                    {
+                        fallback.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        });
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)
+        where T : DependencyObject
+    {
+        for (var index = 0; index < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, index);
+            if (child is T typedChild)
+            {
+                yield return typedChild;
+            }
+
+            foreach (var descendant in FindVisualChildren<T>(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
     private async void Appearance_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_isInitializingAppearance && DataContext is MainViewModel viewModel)
@@ -111,8 +165,27 @@ public partial class MainWindow : Window
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         _isInitializingAppearance = false;
+        if (DataContext is MainViewModel viewModel)
+        {
+            viewModel.StartAutomaticUpdateChecks();
+        }
+
         UpdateBackgroundActivity();
     }
+
+    private void MainWindow_Closed(object? sender, EventArgs e) =>
+        _gameArtworkService.ArtworkUpdated -= GameArtworkUpdated;
+
+    private void MinimizeWindow_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
+
+    private void ToggleMaximizeWindow_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+
+    private void CloseWindow_Click(object sender, RoutedEventArgs e) =>
+        Close();
 
     private void MainWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) =>
         UpdateBackgroundActivity();
@@ -163,6 +236,68 @@ public partial class MainWindow : Window
             await viewModel.AddManualGameCommand.ExecuteAsync(dialog.FileName);
         }
     }
+
+    private async void ScanPcGames_Click(object sender, RoutedEventArgs e)
+    {
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = LocalizationManager.Instance["Games.ScanPc.SelectFolder"],
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = false
+        };
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            var scanResult = await Task.Run(
+                () => PcGameScanner.ScanAsync(dialog.SelectedPath, CancellationToken.None));
+            if (scanResult.Candidates.Count == 0)
+            {
+                System.Windows.MessageBox.Show(
+                    this,
+                    LocalizationManager.Instance["Games.ScanPc.NoCandidates"],
+                    LocalizationManager.Instance["Games.ScanPc"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var reviewWindow = new PcGameScanReviewWindow(scanResult) { Owner = this };
+            if (reviewWindow.ShowDialog() == true
+                && DataContext is ViewModels.MainViewModel viewModel)
+            {
+                await viewModel.AddScannedGamesAsync(
+                    reviewWindow.SelectedCandidates,
+                    CancellationToken.None);
+            }
+        }
+        catch (ArgumentException exception)
+        {
+            Serilog.Log.Warning(exception, "The selected PC scan directory is invalid.");
+            ShowPcScanError();
+        }
+        catch (IOException exception)
+        {
+            Serilog.Log.Warning(exception, "The PC game scan could not read the selected directory.");
+            ShowPcScanError();
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Serilog.Log.Warning(exception, "Access was denied during the PC game scan.");
+            ShowPcScanError();
+        }
+    }
+
+    private void ShowPcScanError() =>
+        System.Windows.MessageBox.Show(
+            this,
+            LocalizationManager.Instance["Games.ScanPc.Failed"],
+            LocalizationManager.Instance["Games.ScanPc"],
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
 
     private void ShowSystemMetricsDetails_Click(object sender, RoutedEventArgs e)
     {
