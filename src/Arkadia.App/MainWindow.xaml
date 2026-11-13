@@ -592,6 +592,22 @@
                                                             </Style>
                                                         </TextBlock.Style>
                                                     </TextBlock>
+                                                    <Button Content="{Binding [Home.SystemMetrics.Details], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            Click="ShowSystemMetricsDetails_Click"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="0,6,0,0"
+                                                            Padding="8,4">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSystemTile}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
                                                 </StackPanel>
                                                 <TextBlock Grid.Row="1"
                                                            Text="↗"
@@ -944,6 +960,73 @@
                                             <ComboBoxItem Content="Deezer" Tag="Deezer" />
                                             <ComboBoxItem Content="YouTube Music" Tag="YouTubeMusic" />
                                         </ComboBox>
+                                        <Border Background="#12FFFFFF"
+                                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="12"
+                                                Padding="12"
+                                                Margin="0,18,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding [Settings.Palette.Title], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           FontSize="16"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding [Settings.Palette.Description], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,4,0,10" />
+                                                <controls:ColorWheelControl Width="180"
+                                                                            Height="180"
+                                                                            HorizontalAlignment="Center"
+                                                                            SelectedColor="{Binding CustomAccentColor, Mode=TwoWay}" />
+                                                <TextBlock Text="{Binding [Settings.Palette.Accent], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,10,0,4" />
+                                                <TextBox Text="{Binding CustomAccentHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxLength="7" />
+                                                <TextBlock Text="{Binding [Settings.Palette.AccentSecondary], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,8,0,4" />
+                                                <TextBox Text="{Binding CustomAccentSecondaryHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxLength="7" />
+                                                <TextBlock Text="{Binding [Settings.Palette.Background], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,8,0,4" />
+                                                <TextBox Text="{Binding CustomBackgroundHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxLength="7" />
+                                                <TextBlock Text="{Binding [Settings.Palette.Surface], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,8,0,4" />
+                                                <TextBox Text="{Binding CustomSurfaceHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxLength="7" />
+                                                <TextBlock Text="{Binding [Settings.Palette.Text], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,8,0,4" />
+                                                <TextBox Text="{Binding CustomTextHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxLength="7" />
+                                                <WrapPanel Margin="0,12,0,0">
+                                                    <Button Content="{Binding [Settings.Palette.Apply], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            Command="{Binding ApplyCustomPaletteCommand}"
+                                                            Style="{StaticResource SurfaceButtonStyle}"
+                                                            Margin="0,0,6,6" />
+                                                    <Button Content="{Binding [Settings.Palette.Reset], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            Command="{Binding ResetCustomPaletteCommand}"
+                                                            Style="{StaticResource SurfaceButtonStyle}"
+                                                            Margin="0,0,6,6" />
+                                                    <Button Content="{Binding [Settings.Palette.Import], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            Click="ImportPalette_Click"
+                                                            Style="{StaticResource SurfaceButtonStyle}"
+                                                            Margin="0,0,6,6" />
+                                                    <Button Content="{Binding [Settings.Palette.Export], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                            Click="ExportPalette_Click"
+                                                            Style="{StaticResource SurfaceButtonStyle}"
+                                                            Margin="0,0,6,6" />
+                                                </WrapPanel>
+                                                <TextBlock Text="{Binding CustomPaletteStatusText}"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Margin="0,4,0,0" />
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
                                 <StackPanel Grid.Column="1">
@@ -1037,6 +1120,122 @@
                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                        TextWrapping="Wrap"
                                                        Margin="0,10,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="20"
+                                            Margin="0,12,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding [Settings.Telemetry.Title], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,8" />
+                                            <TextBlock Text="{Binding [Settings.Telemetry.Description], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,10" />
+                                            <CheckBox Content="{Binding [Settings.Telemetry.CrashReports], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding TelemetryCrashReportsEnabled}"
+                                                      Margin="0,5" />
+                                            <CheckBox Content="{Binding [Settings.Telemetry.Usage], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding TelemetryUsageEnabled}"
+                                                      Margin="0,5" />
+                                            <CheckBox Content="{Binding [Settings.Telemetry.Performance], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                      IsChecked="{Binding TelemetryPerformanceEnabled}"
+                                                      Margin="0,5" />
+                                            <TextBlock Text="{Binding [Settings.Telemetry.Endpoint], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Margin="0,10,0,4" />
+                                            <TextBox Text="{Binding TelemetryEndpoint, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="{Binding [Settings.Telemetry.EndpointHint], Source={x:Static loc:LocalizationManager.Instance}}" />
+                                            <TextBlock Text="{Binding [Settings.Telemetry.InstallationId], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Margin="0,10,0,4" />
+                                            <TextBlock Text="{Binding TelemetryInstallationId}"
+                                                       TextWrapping="Wrap"
+                                                       FontFamily="Consolas"
+                                                       Margin="0,0,0,10" />
+                                            <WrapPanel>
+                                                <Button Content="{Binding [Settings.Telemetry.Save], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Command="{Binding SavePrivacySettingsCommand}"
+                                                        Style="{StaticResource SurfaceButtonStyle}"
+                                                        Margin="0,0,6,6" />
+                                                <Button Content="{Binding [Settings.Telemetry.Send], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Command="{Binding SendPendingTelemetryCommand}"
+                                                        Style="{StaticResource SurfaceButtonStyle}"
+                                                        Margin="0,0,6,6" />
+                                                <Button Content="{Binding [Settings.Telemetry.Clear], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Command="{Binding ClearTelemetryEventsCommand}"
+                                                        Style="{StaticResource SurfaceButtonStyle}"
+                                                        Margin="0,0,6,6" />
+                                                <Button Content="{Binding [Settings.Telemetry.ResetIdentifier], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Command="{Binding ResetTelemetryIdentifierCommand}"
+                                                        Style="{StaticResource SurfaceButtonStyle}"
+                                                        Margin="0,0,6,6" />
+                                            </WrapPanel>
+                                            <TextBlock Text="{Binding TelemetryStatusText}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,4,0,8" />
+                                            <TextBlock Text="{Binding [Settings.Telemetry.Recent], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,5" />
+                                            <ListBox ItemsSource="{Binding TelemetryEvents}"
+                                                     MaxHeight="160"
+                                                     Background="Transparent"
+                                                     BorderThickness="0">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Margin="2,3">
+                                                            <DockPanel>
+                                                                <TextBlock Text="{Binding CreatedUtc}"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                           DockPanel.Dock="Right"
+                                                                           Margin="8,0,0,0" />
+                                                                <TextBlock Text="{Binding Event}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </DockPanel>
+                                                            <TextBlock Text="{Binding PayloadJson}"
+                                                                       FontSize="10"
+                                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                       TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                            <TextBlock Text="{Binding [Settings.Telemetry.Empty], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Visibility="{Binding HasTelemetryEvents, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#12FFFFFF"
+                                            BorderBrush="{DynamicResource CardBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Padding="20"
+                                            Margin="0,12,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding [Settings.Data.Title], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,0,8" />
+                                            <TextBlock Text="{Binding [Settings.Data.Description], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,12" />
+                                            <WrapPanel>
+                                                <Button Content="{Binding [Settings.Data.Export], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Click="ExportUserData_Click"
+                                                        Style="{StaticResource SurfaceButtonStyle}"
+                                                        Margin="0,0,8,0" />
+                                                <Button Content="{Binding [Settings.Data.Delete], Source={x:Static loc:LocalizationManager.Instance}}"
+                                                        Click="DeleteUserData_Click"
+                                                        Style="{StaticResource SurfaceButtonStyle}" />
+                                            </WrapPanel>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>

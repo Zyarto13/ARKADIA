@@ -164,6 +164,119 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ShowSystemMetricsDetails_Click(object sender, RoutedEventArgs e)
+    {
+        new SystemMetricsDetailsWindow
+        {
+            Owner = this,
+            DataContext = DataContext
+        }.ShowDialog();
+    }
+
+    private async void ImportPalette_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = LocalizationManager.Instance["Settings.Palette.Import"],
+            Filter = LocalizationManager.Instance["Settings.Palette.FileFilter"],
+            CheckFileExists = true,
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            await viewModel.ImportCustomPaletteAsync(dialog.FileName);
+        }
+    }
+
+    private async void ExportPalette_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = LocalizationManager.Instance["Settings.Palette.Export"],
+            Filter = LocalizationManager.Instance["Settings.Palette.FileFilter"],
+            DefaultExt = ".json",
+            AddExtension = true,
+            FileName = "arkadia-theme.json",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            await viewModel.ExportCustomPaletteAsync(dialog.FileName);
+        }
+    }
+
+    private async void ExportUserData_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = LocalizationManager.Instance["Settings.Data.Export"],
+            Filter = LocalizationManager.Instance["Settings.Data.FileFilter"],
+            DefaultExt = ".zip",
+            AddExtension = true,
+            FileName = "arkadia-data-export.zip",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            var exported = await viewModel.ExportUserDataAsync(dialog.FileName);
+            System.Windows.MessageBox.Show(
+                this,
+                viewModel.LaunchMessage,
+                "ARKADIA",
+                MessageBoxButton.OK,
+                exported
+                    ? MessageBoxImage.Information
+                    : MessageBoxImage.Error);
+        }
+    }
+
+    private async void DeleteUserData_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        if (System.Windows.MessageBox.Show(
+                this,
+                LocalizationManager.Instance["Settings.Data.DeleteConfirmation"],
+                "ARKADIA",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        if (await viewModel.DeleteAllUserDataAsync())
+        {
+            IsQuitting = true;
+            System.Windows.Application.Current.Shutdown();
+            return;
+        }
+
+        System.Windows.MessageBox.Show(
+            this,
+            viewModel.LaunchMessage,
+            "ARKADIA",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+    }
+
     private void MusicVolumePercent_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (sender is not System.Windows.Controls.TextBox textBox)

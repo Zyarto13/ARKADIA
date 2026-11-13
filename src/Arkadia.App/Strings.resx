@@ -50,7 +50,20 @@
   <data name="Home.Offline" xml:space="preserve"><value>Offline</value></data>
   <data name="Home.Online" xml:space="preserve"><value>Online</value></data>
   <data name="Home.Ready" xml:space="preserve"><value>Ready on this PC</value></data>
-  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU —</value></data>
+  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU {2}</value></data>
+  <data name="Home.SystemMetrics.CoreLabel" xml:space="preserve"><value>Core {0}</value></data>
+  <data name="Home.SystemMetrics.Details" xml:space="preserve"><value>System details</value></data>
+  <data name="System.Details.Title" xml:space="preserve"><value>System performance</value></data>
+  <data name="System.Details.Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="System.Details.Memory" xml:space="preserve"><value>Memory</value></data>
+  <data name="System.Details.MemoryUsed" xml:space="preserve"><value>Used</value></data>
+  <data name="System.Details.MemoryAvailable" xml:space="preserve"><value>Available</value></data>
+  <data name="System.Details.MemoryTotal" xml:space="preserve"><value>Total</value></data>
+  <data name="System.Details.Gpu" xml:space="preserve"><value>GPU · 3D engines</value></data>
+  <data name="System.Details.GpuMemory" xml:space="preserve"><value>Dedicated GPU memory</value></data>
+  <data name="System.Details.Cores" xml:space="preserve"><value>CPU cores</value></data>
+  <data name="System.Details.History" xml:space="preserve"><value>Last 60 seconds</value></data>
+  <data name="System.Details.Time" xml:space="preserve"><value>Time</value></data>
   <data name="Database.Recovered" xml:space="preserve"><value>ARKADIA restored its local data from the latest valid backup.</value></data>
   <data name="Database.BackupFailed" xml:space="preserve"><value>ARKADIA could not create today's database backup. Check the application logs.</value></data>
   <data name="Database.RecoveryFailed" xml:space="preserve"><value>ARKADIA's local database is damaged and no valid backup is available. The app cannot safely continue. Check the application logs.</value></data>
@@ -113,6 +126,26 @@
   <data name="Window.Maximize" xml:space="preserve"><value>Maximize or restore</value></data>
   <data name="Window.Close" xml:space="preserve"><value>Close ARKADIA</value></data>
   <data name="Settings.Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings.Palette.Title" xml:space="preserve"><value>Custom palette</value></data>
+  <data name="Settings.Palette.Description" xml:space="preserve"><value>Changes preview immediately. Colors use #RRGGBB.</value></data>
+  <data name="Settings.Palette.Accent" xml:space="preserve"><value>Primary accent</value></data>
+  <data name="Settings.Palette.AccentSecondary" xml:space="preserve"><value>Secondary accent</value></data>
+  <data name="Settings.Palette.Background" xml:space="preserve"><value>Background</value></data>
+  <data name="Settings.Palette.Surface" xml:space="preserve"><value>Surface</value></data>
+  <data name="Settings.Palette.Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Settings.Palette.Apply" xml:space="preserve"><value>Apply and save</value></data>
+  <data name="Settings.Palette.Reset" xml:space="preserve"><value>Reset palette</value></data>
+  <data name="Settings.Palette.Import" xml:space="preserve"><value>Import</value></data>
+  <data name="Settings.Palette.Export" xml:space="preserve"><value>Export</value></data>
+  <data name="Settings.Palette.FileFilter" xml:space="preserve"><value>JSON theme (*.json)|*.json</value></data>
+  <data name="Settings.Palette.Invalid" xml:space="preserve"><value>Use a valid #RRGGBB value for every color.</value></data>
+  <data name="Settings.Palette.ContrastWarning" xml:space="preserve"><value>Palette saved, but text contrast may be hard to read.</value></data>
+  <data name="Settings.Palette.Applied" xml:space="preserve"><value>Palette applied and saved.</value></data>
+  <data name="Settings.Palette.Preview" xml:space="preserve"><value>Palette preview updated.</value></data>
+  <data name="Settings.Palette.Exported" xml:space="preserve"><value>Palette exported.</value></data>
+  <data name="Settings.Palette.ExportFailed" xml:space="preserve"><value>Could not export the palette.</value></data>
+  <data name="Settings.Palette.Imported" xml:space="preserve"><value>Palette imported and saved.</value></data>
+  <data name="Settings.Palette.ImportFailed" xml:space="preserve"><value>Could not import that palette.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Settings.Theme.Blue" xml:space="preserve"><value>Blue</value></data>
   <data name="Settings.Theme.Light" xml:space="preserve"><value>Light</value></data>
@@ -124,6 +157,38 @@
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Settings.Language.French" xml:space="preserve"><value>French</value></data>
   <data name="Settings.System" xml:space="preserve"><value>System behavior</value></data>
+  <data name="Settings.Telemetry.Title" xml:space="preserve"><value>Privacy and diagnostics</value></data>
+  <data name="Settings.Telemetry.Description" xml:space="preserve"><value>Everything is disabled by default. Events stay on this PC unless you provide an HTTPS endpoint and explicitly send them.</value></data>
+  <data name="Settings.Telemetry.CrashReports" xml:space="preserve"><value>Queue anonymous crash type reports</value></data>
+  <data name="Settings.Telemetry.Usage" xml:space="preserve"><value>Queue anonymous app usage events</value></data>
+  <data name="Settings.Telemetry.Performance" xml:space="preserve"><value>Queue anonymous system performance samples</value></data>
+  <data name="Settings.Telemetry.Endpoint" xml:space="preserve"><value>Telemetry HTTPS endpoint</value></data>
+  <data name="Settings.Telemetry.EndpointHint" xml:space="preserve"><value>HTTPS only; leave blank to keep events local.</value></data>
+  <data name="Settings.Telemetry.InstallationId" xml:space="preserve"><value>Anonymous installation ID</value></data>
+  <data name="Settings.Telemetry.Save" xml:space="preserve"><value>Save consent</value></data>
+  <data name="Settings.Telemetry.Send" xml:space="preserve"><value>Send pending events</value></data>
+  <data name="Settings.Telemetry.Clear" xml:space="preserve"><value>Clear event history</value></data>
+  <data name="Settings.Telemetry.ResetIdentifier" xml:space="preserve"><value>Reset ID and clear events</value></data>
+  <data name="Settings.Telemetry.Recent" xml:space="preserve"><value>Recent local and sent events</value></data>
+  <data name="Settings.Telemetry.Empty" xml:space="preserve"><value>No telemetry events.</value></data>
+  <data name="Settings.Telemetry.InvalidEndpoint" xml:space="preserve"><value>Enter a valid HTTPS endpoint or leave it blank.</value></data>
+  <data name="Settings.Telemetry.LocalOnly" xml:space="preserve"><value>Consent saved. Events will remain local.</value></data>
+  <data name="Settings.Telemetry.Saved" xml:space="preserve"><value>Privacy settings saved.</value></data>
+  <data name="Settings.Telemetry.SaveFailed" xml:space="preserve"><value>Could not save privacy settings.</value></data>
+  <data name="Settings.Telemetry.NothingToSend" xml:space="preserve"><value>No pending events are available to send.</value></data>
+  <data name="Settings.Telemetry.Sent" xml:space="preserve"><value>Sent {0} telemetry events.</value></data>
+  <data name="Settings.Telemetry.SendFailed" xml:space="preserve"><value>Could not send telemetry events. They remain queued locally.</value></data>
+  <data name="Settings.Telemetry.Cleared" xml:space="preserve"><value>Telemetry event history cleared.</value></data>
+  <data name="Settings.Telemetry.IdentifierReset" xml:space="preserve"><value>Installation ID reset and event history cleared.</value></data>
+  <data name="Settings.Data.Title" xml:space="preserve"><value>Your data</value></data>
+  <data name="Settings.Data.Description" xml:space="preserve"><value>Export a local database snapshot and settings, or permanently delete ARKADIA data from this PC. Exports exclude encrypted API keys, logs and artwork.</value></data>
+  <data name="Settings.Data.Export" xml:space="preserve"><value>Export data</value></data>
+  <data name="Settings.Data.Delete" xml:space="preserve"><value>Delete all local data</value></data>
+  <data name="Settings.Data.FileFilter" xml:space="preserve"><value>ZIP archive (*.zip)|*.zip</value></data>
+  <data name="Settings.Data.Exported" xml:space="preserve"><value>Data export completed.</value></data>
+  <data name="Settings.Data.ExportFailed" xml:space="preserve"><value>Could not export ARKADIA data.</value></data>
+  <data name="Settings.Data.DeleteConfirmation" xml:space="preserve"><value>This permanently deletes ARKADIA settings, the local database, backups, logs, and cached artwork from this PC. ARKADIA will close. Continue?</value></data>
+  <data name="Settings.Data.DeleteFailed" xml:space="preserve"><value>Could not delete ARKADIA data. Check file access and try again.</value></data>
   <data name="Settings.SteamApiKey" xml:space="preserve"><value>Steam Web API key</value></data>
   <data name="Settings.SteamApiKeyHelp" xml:space="preserve"><value>Create a personal key at steamcommunity.com/dev/apikey. It is encrypted for your Windows account. To see your progress, also set Game details to Public in Steam.</value></data>
   <data name="Settings.Updates.Title" xml:space="preserve"><value>Application updates</value></data>

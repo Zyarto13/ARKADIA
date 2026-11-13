@@ -50,7 +50,20 @@
   <data name="Home.Offline" xml:space="preserve"><value>Hors ligne</value></data>
   <data name="Home.Online" xml:space="preserve"><value>En ligne</value></data>
   <data name="Home.Ready" xml:space="preserve"><value>Prêt sur ce PC</value></data>
-  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU —</value></data>
+  <data name="Home.SystemMetrics" xml:space="preserve"><value>CPU {0} · RAM {1} · GPU {2}</value></data>
+  <data name="Home.SystemMetrics.CoreLabel" xml:space="preserve"><value>Cœur {0}</value></data>
+  <data name="Home.SystemMetrics.Details" xml:space="preserve"><value>Détails du système</value></data>
+  <data name="System.Details.Title" xml:space="preserve"><value>Performances système</value></data>
+  <data name="System.Details.Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="System.Details.Memory" xml:space="preserve"><value>Mémoire</value></data>
+  <data name="System.Details.MemoryUsed" xml:space="preserve"><value>Utilisée</value></data>
+  <data name="System.Details.MemoryAvailable" xml:space="preserve"><value>Disponible</value></data>
+  <data name="System.Details.MemoryTotal" xml:space="preserve"><value>Totale</value></data>
+  <data name="System.Details.Gpu" xml:space="preserve"><value>GPU · moteurs 3D</value></data>
+  <data name="System.Details.GpuMemory" xml:space="preserve"><value>Mémoire GPU dédiée</value></data>
+  <data name="System.Details.Cores" xml:space="preserve"><value>Cœurs CPU</value></data>
+  <data name="System.Details.History" xml:space="preserve"><value>60 dernières secondes</value></data>
+  <data name="System.Details.Time" xml:space="preserve"><value>Heure</value></data>
   <data name="Database.Recovered" xml:space="preserve"><value>ARKADIA a restauré les données locales depuis la dernière sauvegarde valide.</value></data>
   <data name="Database.BackupFailed" xml:space="preserve"><value>ARKADIA n’a pas pu créer la sauvegarde du jour. Consultez les journaux de l’application.</value></data>
   <data name="Database.RecoveryFailed" xml:space="preserve"><value>La base locale d’ARKADIA est endommagée et aucune sauvegarde valide n’est disponible. L’application ne peut pas continuer sans risque. Consultez les journaux.</value></data>
@@ -113,6 +126,26 @@
   <data name="Window.Maximize" xml:space="preserve"><value>Agrandir ou restaurer</value></data>
   <data name="Window.Close" xml:space="preserve"><value>Fermer ARKADIA</value></data>
   <data name="Settings.Appearance" xml:space="preserve"><value>Apparence</value></data>
+  <data name="Settings.Palette.Title" xml:space="preserve"><value>Palette personnalisée</value></data>
+  <data name="Settings.Palette.Description" xml:space="preserve"><value>L’aperçu change immédiatement. Utilisez le format #RRGGBB.</value></data>
+  <data name="Settings.Palette.Accent" xml:space="preserve"><value>Couleur principale</value></data>
+  <data name="Settings.Palette.AccentSecondary" xml:space="preserve"><value>Couleur secondaire</value></data>
+  <data name="Settings.Palette.Background" xml:space="preserve"><value>Arrière-plan</value></data>
+  <data name="Settings.Palette.Surface" xml:space="preserve"><value>Surface</value></data>
+  <data name="Settings.Palette.Text" xml:space="preserve"><value>Texte</value></data>
+  <data name="Settings.Palette.Apply" xml:space="preserve"><value>Appliquer et enregistrer</value></data>
+  <data name="Settings.Palette.Reset" xml:space="preserve"><value>Réinitialiser la palette</value></data>
+  <data name="Settings.Palette.Import" xml:space="preserve"><value>Importer</value></data>
+  <data name="Settings.Palette.Export" xml:space="preserve"><value>Exporter</value></data>
+  <data name="Settings.Palette.FileFilter" xml:space="preserve"><value>Thème JSON (*.json)|*.json</value></data>
+  <data name="Settings.Palette.Invalid" xml:space="preserve"><value>Utilisez une valeur #RRGGBB valide pour chaque couleur.</value></data>
+  <data name="Settings.Palette.ContrastWarning" xml:space="preserve"><value>Palette enregistrée, mais le contraste du texte peut être difficile à lire.</value></data>
+  <data name="Settings.Palette.Applied" xml:space="preserve"><value>Palette appliquée et enregistrée.</value></data>
+  <data name="Settings.Palette.Preview" xml:space="preserve"><value>Aperçu de la palette mis à jour.</value></data>
+  <data name="Settings.Palette.Exported" xml:space="preserve"><value>Palette exportée.</value></data>
+  <data name="Settings.Palette.ExportFailed" xml:space="preserve"><value>Impossible d’exporter la palette.</value></data>
+  <data name="Settings.Palette.Imported" xml:space="preserve"><value>Palette importée et enregistrée.</value></data>
+  <data name="Settings.Palette.ImportFailed" xml:space="preserve"><value>Impossible d’importer cette palette.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Settings.Theme.Blue" xml:space="preserve"><value>Bleu</value></data>
   <data name="Settings.Theme.Light" xml:space="preserve"><value>Clair</value></data>
@@ -124,6 +157,38 @@
   <data name="Settings.Language.English" xml:space="preserve"><value>Anglais</value></data>
   <data name="Settings.Language.French" xml:space="preserve"><value>Français</value></data>
   <data name="Settings.System" xml:space="preserve"><value>Comportement du système</value></data>
+  <data name="Settings.Telemetry.Title" xml:space="preserve"><value>Confidentialité et diagnostics</value></data>
+  <data name="Settings.Telemetry.Description" xml:space="preserve"><value>Tout est désactivé par défaut. Les événements restent sur ce PC, sauf si vous fournissez un point de terminaison HTTPS et les envoyez explicitement.</value></data>
+  <data name="Settings.Telemetry.CrashReports" xml:space="preserve"><value>Mettre en file les types d’erreurs anonymes</value></data>
+  <data name="Settings.Telemetry.Usage" xml:space="preserve"><value>Mettre en file les événements d’utilisation anonymes</value></data>
+  <data name="Settings.Telemetry.Performance" xml:space="preserve"><value>Mettre en file des mesures système anonymes</value></data>
+  <data name="Settings.Telemetry.Endpoint" xml:space="preserve"><value>Point de terminaison HTTPS de télémétrie</value></data>
+  <data name="Settings.Telemetry.EndpointHint" xml:space="preserve"><value>HTTPS uniquement ; laissez vide pour conserver les événements localement.</value></data>
+  <data name="Settings.Telemetry.InstallationId" xml:space="preserve"><value>Identifiant d’installation anonyme</value></data>
+  <data name="Settings.Telemetry.Save" xml:space="preserve"><value>Enregistrer le consentement</value></data>
+  <data name="Settings.Telemetry.Send" xml:space="preserve"><value>Envoyer les événements en attente</value></data>
+  <data name="Settings.Telemetry.Clear" xml:space="preserve"><value>Effacer l’historique</value></data>
+  <data name="Settings.Telemetry.ResetIdentifier" xml:space="preserve"><value>Réinitialiser l’identifiant et effacer</value></data>
+  <data name="Settings.Telemetry.Recent" xml:space="preserve"><value>Événements récents locaux et envoyés</value></data>
+  <data name="Settings.Telemetry.Empty" xml:space="preserve"><value>Aucun événement de télémétrie.</value></data>
+  <data name="Settings.Telemetry.InvalidEndpoint" xml:space="preserve"><value>Saisissez un point de terminaison HTTPS valide ou laissez le champ vide.</value></data>
+  <data name="Settings.Telemetry.LocalOnly" xml:space="preserve"><value>Consentement enregistré. Les événements resteront locaux.</value></data>
+  <data name="Settings.Telemetry.Saved" xml:space="preserve"><value>Paramètres de confidentialité enregistrés.</value></data>
+  <data name="Settings.Telemetry.SaveFailed" xml:space="preserve"><value>Impossible d’enregistrer les paramètres de confidentialité.</value></data>
+  <data name="Settings.Telemetry.NothingToSend" xml:space="preserve"><value>Aucun événement en attente à envoyer.</value></data>
+  <data name="Settings.Telemetry.Sent" xml:space="preserve"><value>{0} événements de télémétrie envoyés.</value></data>
+  <data name="Settings.Telemetry.SendFailed" xml:space="preserve"><value>Impossible d’envoyer les événements. Ils restent en file d’attente locale.</value></data>
+  <data name="Settings.Telemetry.Cleared" xml:space="preserve"><value>Historique de télémétrie effacé.</value></data>
+  <data name="Settings.Telemetry.IdentifierReset" xml:space="preserve"><value>Identifiant réinitialisé et historique effacé.</value></data>
+  <data name="Settings.Data.Title" xml:space="preserve"><value>Vos données</value></data>
+  <data name="Settings.Data.Description" xml:space="preserve"><value>Exportez une copie locale de la base et des paramètres, ou supprimez définitivement les données ARKADIA de ce PC. Les clés API chiffrées, journaux et images en cache sont exclus de l’export.</value></data>
+  <data name="Settings.Data.Export" xml:space="preserve"><value>Exporter les données</value></data>
+  <data name="Settings.Data.Delete" xml:space="preserve"><value>Supprimer toutes les données locales</value></data>
+  <data name="Settings.Data.FileFilter" xml:space="preserve"><value>Archive ZIP (*.zip)|*.zip</value></data>
+  <data name="Settings.Data.Exported" xml:space="preserve"><value>Export des données terminé.</value></data>
+  <data name="Settings.Data.ExportFailed" xml:space="preserve"><value>Impossible d’exporter les données ARKADIA.</value></data>
+  <data name="Settings.Data.DeleteConfirmation" xml:space="preserve"><value>Cette action supprime définitivement les paramètres ARKADIA, la base locale, les sauvegardes, les journaux et les images en cache de ce PC. ARKADIA va se fermer. Continuer ?</value></data>
+  <data name="Settings.Data.DeleteFailed" xml:space="preserve"><value>Impossible de supprimer les données ARKADIA. Vérifiez les accès aux fichiers puis réessayez.</value></data>
   <data name="Settings.SteamApiKey" xml:space="preserve"><value>Clé Steam Web API</value></data>
   <data name="Settings.SteamApiKeyHelp" xml:space="preserve"><value>Créez une clé personnelle sur steamcommunity.com/dev/apikey. La clé est chiffrée pour votre compte Windows. Pour voir votre progression, réglez aussi « Détails du jeu » sur public dans Steam.</value></data>
   <data name="Settings.Updates.Title" xml:space="preserve"><value>Mises à jour de l’application</value></data>

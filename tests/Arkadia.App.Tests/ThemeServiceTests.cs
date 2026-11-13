@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
+using Arkadia.Core.Models;
 using Arkadia.App.Services;
 using Xunit;
 
@@ -39,6 +40,11 @@ public sealed class ThemeServiceTests
                     Assert.IsType<LinearGradientBrush>(application.Resources["AccentBrush"]);
                 }
 
+                ThemeService.ApplyCustomPalette(
+                    new ThemePalette("#00D2FF", "#3A86FF", "#12141D", "#1E202D", "#F2F5FA"));
+                Assert.IsType<LinearGradientBrush>(application.Resources["WindowBackgroundBrush"]);
+                Assert.IsType<LinearGradientBrush>(application.Resources["CardBackgroundBrush"]);
+                Assert.IsType<LinearGradientBrush>(application.Resources["AccentBrush"]);
                 application.Shutdown();
             }
             catch (Exception exception)
@@ -55,5 +61,16 @@ public sealed class ThemeServiceTests
         {
             throw new AggregateException(failure);
         }
+    }
+
+    [Fact]
+    public void CustomPaletteContrastUsesTheWorstTextContrastAcrossBackgroundAndSurface()
+    {
+        var highContrast = new ThemePalette("#00D2FF", "#3A86FF", "#000000", "#000000", "#FFFFFF");
+        var lowContrast = highContrast with { Surface = "#FFFFFF" };
+
+        Assert.Equal(21, ThemeService.GetTextContrastRatio(highContrast), precision: 10);
+        Assert.Equal(1, ThemeService.GetTextContrastRatio(lowContrast), precision: 10);
+        Assert.False(ThemeService.TryParseHexColor("#12FG00", out _));
     }
 }

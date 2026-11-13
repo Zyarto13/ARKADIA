@@ -13,7 +13,9 @@ public sealed record AppSettings(
     IReadOnlyList<AppShortcut>? Shortcuts = null,
     IReadOnlyList<AudioVolumeProfile>? AudioProfiles = null,
     IReadOnlyList<HomeTileLayoutEntry>? HomeTiles = null,
-    IReadOnlyList<ManualGameDefinition>? ManualGames = null)
+    IReadOnlyList<ManualGameDefinition>? ManualGames = null,
+    ThemePalette? CustomThemePalette = null,
+    TelemetrySettings? Telemetry = null)
 {
     public static AppSettings Default { get; } = new(
         "Blue",

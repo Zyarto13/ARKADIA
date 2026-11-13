@@ -18,12 +18,40 @@ using Arkadia.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NAudio.CoreAudioApi;
+using Microsoft.Data.Sqlite;
 using Serilog;
+using Color = System.Windows.Media.Color;
 
 namespace Arkadia.App.ViewModels;
 
+public sealed record SystemMetricsHistoryEntry(
+    DateTimeOffset CapturedAt,
+    double? CpuUsagePercent,
+    double MemoryUsagePercent,
+    double? GpuUsagePercent)
+{
+    public string CapturedAtText => CapturedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture);
+    public string CpuText => CpuUsagePercent is { } value ? $"{value:0}%" : "—";
+    public string MemoryText => $"{MemoryUsagePercent:0}%";
+    public string GpuText => GpuUsagePercent is { } value ? $"{value:0}%" : "—";
+}
+
+public sealed record SystemCoreMetricEntry(int Index, double UsagePercent)
+{
+    public string Label => string.Format(
+        CultureInfo.CurrentCulture,
+        LocalizationManager.Instance["Home.SystemMetrics.CoreLabel"],
+        Index);
+    public string UsageText => $"{UsagePercent:0}%";
+}
+
 public partial class MainViewModel : ObservableObject, IDisposable
 {
+    private static readonly JsonSerializerOptions PaletteJsonOptions = new()
+    {
+        WriteIndented = true
+    };
+
     private static readonly string[] DefaultHomeTileOrder =
     [
         "music",
@@ -52,6 +80,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly SteamApiKeyStore _steamApiKeyStore;
     private readonly GitHubUpdateService _updateService;
     private readonly ThemeService _themeService;
+    private readonly DataManagementService _dataManagementService;
+    private readonly TelemetryService _telemetryService;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly WindowsAudioDeviceNotificationService _audioDeviceNotificationService = new();
     private readonly WindowsSystemMetricsService _systemMetricsService = new();
@@ -71,6 +101,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isOnline;
     private double? _cpuUsagePercent;
     private double _memoryUsagePercent;
+    private double? _gpuUsagePercent;
+    private ulong _memoryUsedBytes;
+    private ulong _memoryAvailableBytes;
+    private ulong _memoryTotalBytes;
+    private ulong? _gpuDedicatedMemoryBytes;
+    private IReadOnlyList<SystemCoreMetricEntry> _systemCoreMetrics = [];
     private volatile bool _isApplicationVisible;
     private bool _isSettingsSelected;
     private bool _isHomeEditMode;
@@ -118,6 +154,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private UpdateRelease? _availableUpdate;
     private bool _isCheckingForUpdates;
     private bool _isApplyingUpdate;
+    private ThemePalette? _customThemePalette;
+    private Color _customAccentColor = Color.FromRgb(0, 210, 255);
+    private string _customAccentHex = "#00D2FF";
+    private string _customAccentSecondaryHex = "#3A86FF";
+    private string _customBackgroundHex = "#12141D";
+    private string _customSurfaceHex = "#1E202D";
+    private string _customTextHex = "#F2F5FA";
+    private bool _isCustomPaletteValid = true;
+    private bool _hasLowContrast;
+    private string _customPaletteStatusText = string.Empty;
+    private bool _telemetryCrashReportsEnabled;
+    private bool _telemetryUsageEnabled;
+    private bool _telemetryPerformanceEnabled;
+    private string _telemetryEndpoint = string.Empty;
+    private string _telemetryStatusText = string.Empty;
+    private TelemetrySettings _telemetrySettings = new(InstallationId: Guid.NewGuid().ToString("N"));
+    private DateTimeOffset _lastPerformanceTelemetryUtc;
 
     public MainViewModel(
         IExternalLauncher externalLauncher,
@@ -127,7 +180,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SteamApiKeyStore steamApiKeyStore,
         IEnumerable<IGameProvider> gameProviders,
         ThemeService themeService,
-        GitHubUpdateService updateService)
+        GitHubUpdateService updateService,
+        DataManagementService dataManagementService,
+        TelemetryService telemetryService)
     {
         _externalLauncher = externalLauncher;
         _settingsService = settingsService;
@@ -137,6 +192,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _updateService = updateService;
         _gameProviders = gameProviders.ToArray();
         _themeService = themeService;
+        _dataManagementService = dataManagementService;
+        _telemetryService = telemetryService;
         _currentAppVersion = GitHubUpdateService.CurrentVersion.ToString(3);
         _synchronizationContext = SynchronizationContext.Current;
         _isOnline = NetworkInterface.GetIsNetworkAvailable();
@@ -170,6 +227,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         AudioOutputDevices = [];
         AudioInputDevices = [];
         AudioProfiles = [];
+        SystemMetricsHistory = [];
+        TelemetryEvents = [];
 
         LocalizationManager.Instance.PropertyChanged += LocalizationChanged;
         _audioDeviceNotificationService.DevicesChanged += AudioDevicesChanged;
@@ -245,6 +304,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<AudioDeviceViewModel> AudioOutputDevices { get; }
     public ObservableCollection<AudioDeviceViewModel> AudioInputDevices { get; }
     public ObservableCollection<AudioVolumeProfile> AudioProfiles { get; }
+    public ObservableCollection<SystemMetricsHistoryEntry> SystemMetricsHistory { get; }
+    public ObservableCollection<TelemetryEventEntry> TelemetryEvents { get; }
+    public IReadOnlyList<SystemCoreMetricEntry> SystemCoreMetrics => _systemCoreMetrics;
     public bool IsHome => _currentPageKey == "Home";
     public bool IsGames => _currentPageKey == "Games";
     public bool IsAchievements => _currentPageKey == "Achievements";
@@ -373,13 +435,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var cpu = _cpuUsagePercent is { } cpuPercent
                 ? $"{cpuPercent:0}%"
                 : "—";
+            var gpu = _gpuUsagePercent is { } gpuPercent
+                ? $"{gpuPercent:0}%"
+                : "—";
             return string.Format(
                 CultureInfo.CurrentCulture,
                 LocalizationManager.Instance["Home.SystemMetrics"],
                 cpu,
-                $"{_memoryUsagePercent:0}%");
+                $"{_memoryUsagePercent:0}%",
+                gpu);
         }
     }
+    public string SystemMetricsCpuText => _cpuUsagePercent is { } cpuPercent
+        ? $"{cpuPercent:0}%"
+        : "—";
+    public string SystemMetricsGpuText => _gpuUsagePercent is { } gpuPercent
+        ? $"{gpuPercent:0}%"
+        : "—";
+    public string SystemMetricsUsedMemoryText =>
+        $"{FormatMemory(_memoryUsedBytes)} {LocalizationManager.Instance["System.Details.MemoryUsed"]}";
+    public string SystemMetricsAvailableMemoryText =>
+        $"{FormatMemory(_memoryAvailableBytes)} {LocalizationManager.Instance["System.Details.MemoryAvailable"]}";
+    public string SystemMetricsTotalMemoryText =>
+        $"{FormatMemory(_memoryTotalBytes)} {LocalizationManager.Instance["System.Details.MemoryTotal"]}";
+    public string SystemMetricsGpuMemoryText => _gpuDedicatedMemoryBytes is { } bytes
+        ? FormatMemory(bytes)
+        : "—";
 
     public string GamesStatusText
     {
@@ -685,8 +766,144 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _selectedTheme, value))
             {
                 _themeService.Apply(value);
+                if (_customThemePalette is not null)
+                {
+                    ThemeService.ApplyCustomPalette(_customThemePalette);
+                }
             }
         }
+    }
+
+    public Color CustomAccentColor
+    {
+        get => _customAccentColor;
+        set
+        {
+            if (SetProperty(ref _customAccentColor, value))
+            {
+                _customAccentHex = ThemeService.ToHex(value);
+                OnPropertyChanged(nameof(CustomAccentHex));
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public string CustomAccentHex
+    {
+        get => _customAccentHex;
+        set
+        {
+            if (SetProperty(ref _customAccentHex, value))
+            {
+                if (ThemeService.TryParseHexColor(value, out var color))
+                {
+                    _customAccentColor = color;
+                    OnPropertyChanged(nameof(CustomAccentColor));
+                }
+
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public string CustomAccentSecondaryHex
+    {
+        get => _customAccentSecondaryHex;
+        set
+        {
+            if (SetProperty(ref _customAccentSecondaryHex, value))
+            {
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public string CustomBackgroundHex
+    {
+        get => _customBackgroundHex;
+        set
+        {
+            if (SetProperty(ref _customBackgroundHex, value))
+            {
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public string CustomSurfaceHex
+    {
+        get => _customSurfaceHex;
+        set
+        {
+            if (SetProperty(ref _customSurfaceHex, value))
+            {
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public string CustomTextHex
+    {
+        get => _customTextHex;
+        set
+        {
+            if (SetProperty(ref _customTextHex, value))
+            {
+                UpdateDraftPalette();
+            }
+        }
+    }
+
+    public bool IsCustomPaletteValid
+    {
+        get => _isCustomPaletteValid;
+        private set => SetProperty(ref _isCustomPaletteValid, value);
+    }
+
+    public bool HasLowContrast
+    {
+        get => _hasLowContrast;
+        private set => SetProperty(ref _hasLowContrast, value);
+    }
+
+    public string CustomPaletteStatusText
+    {
+        get => _customPaletteStatusText;
+        private set => SetProperty(ref _customPaletteStatusText, value);
+    }
+
+    public bool TelemetryCrashReportsEnabled
+    {
+        get => _telemetryCrashReportsEnabled;
+        set => SetProperty(ref _telemetryCrashReportsEnabled, value);
+    }
+
+    public bool TelemetryUsageEnabled
+    {
+        get => _telemetryUsageEnabled;
+        set => SetProperty(ref _telemetryUsageEnabled, value);
+    }
+
+    public bool TelemetryPerformanceEnabled
+    {
+        get => _telemetryPerformanceEnabled;
+        set => SetProperty(ref _telemetryPerformanceEnabled, value);
+    }
+
+    public string TelemetryEndpoint
+    {
+        get => _telemetryEndpoint;
+        set => SetProperty(ref _telemetryEndpoint, value);
+    }
+
+    public string TelemetryInstallationId => _telemetrySettings.InstallationId;
+
+    public bool HasTelemetryEvents => TelemetryEvents.Count > 0;
+
+    public string TelemetryStatusText
+    {
+        get => _telemetryStatusText;
+        private set => SetProperty(ref _telemetryStatusText, value);
     }
 
     public string SelectedLanguage
@@ -1238,6 +1455,215 @@ public partial class MainViewModel : ObservableObject, IDisposable
         await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
     }
 
+    [RelayCommand]
+    private async Task ApplyCustomPaletteAsync(CancellationToken cancellationToken)
+    {
+        if (!TryCreatePalette(out var palette))
+        {
+            IsCustomPaletteValid = false;
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Invalid"];
+            return;
+        }
+
+        _customThemePalette = palette;
+        ThemeService.ApplyCustomPalette(palette);
+        HasLowContrast = ThemeService.GetTextContrastRatio(palette) < 4.5;
+        await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+        CustomPaletteStatusText = LocalizationManager.Instance[
+            HasLowContrast ? "Settings.Palette.ContrastWarning" : "Settings.Palette.Applied"];
+    }
+
+    [RelayCommand]
+    private async Task ResetCustomPaletteAsync(CancellationToken cancellationToken)
+    {
+        _customThemePalette = null;
+        ThemeService.ClearCustomPalette();
+        _themeService.Apply(SelectedTheme);
+        LoadPaletteDraft(null);
+        HasLowContrast = false;
+        IsCustomPaletteValid = true;
+        await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+        CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Reset"];
+    }
+
+    public async Task ExportCustomPaletteAsync(string path, CancellationToken cancellationToken = default)
+    {
+        if (!TryCreatePalette(out var palette))
+        {
+            IsCustomPaletteValid = false;
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Invalid"];
+            return;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(palette, PaletteJsonOptions);
+            await File.WriteAllTextAsync(path, json, cancellationToken);
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Exported"];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Log.Warning(exception, "Could not export the custom theme palette.");
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.ExportFailed"];
+        }
+    }
+
+    public async Task ImportCustomPaletteAsync(string path, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var json = await File.ReadAllTextAsync(path, cancellationToken);
+            var palette = JsonSerializer.Deserialize<ThemePalette>(json)
+                ?? throw new InvalidDataException("The selected theme file contains no palette.");
+            if (!IsValidPalette(palette))
+            {
+                throw new InvalidDataException("The selected theme file contains an invalid color.");
+            }
+
+            LoadPaletteDraft(palette);
+            UpdateDraftPalette();
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Imported"];
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
+        {
+            Log.Warning(exception, "Could not import a custom theme palette.");
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.ImportFailed"];
+        }
+    }
+
+    [RelayCommand]
+    private async Task SavePrivacySettingsAsync(CancellationToken cancellationToken)
+    {
+        var telemetrySettings = CurrentTelemetrySettings;
+        if (!string.IsNullOrWhiteSpace(telemetrySettings.Endpoint)
+            && (!Uri.TryCreate(telemetrySettings.Endpoint, UriKind.Absolute, out var endpoint)
+                || endpoint.Scheme != Uri.UriSchemeHttps
+                || !string.IsNullOrEmpty(endpoint.UserInfo)
+                || !string.IsNullOrEmpty(endpoint.Fragment)))
+        {
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.InvalidEndpoint"];
+            return;
+        }
+
+        try
+        {
+            await _telemetryService.PurgeDisabledCategoriesAsync(telemetrySettings, cancellationToken);
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            _telemetrySettings = telemetrySettings;
+            await RefreshTelemetryEventsAsync(cancellationToken);
+            TelemetryStatusText = string.IsNullOrWhiteSpace(telemetrySettings.Endpoint)
+                ? LocalizationManager.Instance["Settings.Telemetry.LocalOnly"]
+                : LocalizationManager.Instance["Settings.Telemetry.Saved"];
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or SqliteException)
+        {
+            Log.Warning(exception, "Could not save privacy and telemetry settings.");
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.SaveFailed"];
+        }
+    }
+
+    [RelayCommand]
+    private async Task SendPendingTelemetryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var sentCount = await _telemetryService.SendPendingAsync(
+                CurrentTelemetrySettings,
+                cancellationToken);
+            await RefreshTelemetryEventsAsync(cancellationToken);
+            TelemetryStatusText = sentCount == 0
+                ? LocalizationManager.Instance["Settings.Telemetry.NothingToSend"]
+                : string.Format(
+                    CultureInfo.CurrentCulture,
+                    LocalizationManager.Instance["Settings.Telemetry.Sent"],
+                    sentCount);
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or IOException or InvalidOperationException or JsonException)
+        {
+            Log.Warning(exception, "Could not send pending telemetry events.");
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.SendFailed"];
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearTelemetryEventsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _telemetryService.ClearEventsAsync(cancellationToken);
+            await RefreshTelemetryEventsAsync(cancellationToken);
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.Cleared"];
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or SqliteException)
+        {
+            Log.Warning(exception, "Could not clear local telemetry events.");
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.SaveFailed"];
+        }
+    }
+
+    [RelayCommand]
+    private async Task ResetTelemetryIdentifierAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _telemetryService.ClearEventsAsync(cancellationToken);
+            _telemetrySettings = CurrentTelemetrySettings with
+            {
+                InstallationId = Guid.NewGuid().ToString("N")
+            };
+            OnPropertyChanged(nameof(TelemetryInstallationId));
+            await _settingsService.SaveAsync(CurrentSettings, cancellationToken);
+            await RefreshTelemetryEventsAsync(cancellationToken);
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.IdentifierReset"];
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or SqliteException)
+        {
+            Log.Warning(exception, "Could not reset the telemetry installation identifier.");
+            TelemetryStatusText = LocalizationManager.Instance["Settings.Telemetry.SaveFailed"];
+        }
+    }
+
+    public async Task<bool> ExportUserDataAsync(string path, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dataManagementService.ExportAsync(path, CurrentSettings, cancellationToken);
+            LaunchMessage = LocalizationManager.Instance["Settings.Data.Exported"];
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or JsonException or SqliteException)
+        {
+            Log.Warning(exception, "Could not export ARKADIA user data.");
+            LaunchMessage = LocalizationManager.Instance["Settings.Data.ExportFailed"];
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteAllUserDataAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _startupTaskService.SetEnabledAsync(false, startMinimized: false, cancellationToken);
+            Log.CloseAndFlush();
+            _dataManagementService.DeleteAllUserData();
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException
+                or SqliteException or System.Runtime.InteropServices.COMException)
+        {
+            LaunchMessage = LocalizationManager.Instance["Settings.Data.DeleteFailed"];
+            return false;
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
     private async Task CheckForUpdatesAsync(CancellationToken cancellationToken)
     {
@@ -1341,6 +1767,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var settings = await _settingsService.LoadAsync(cancellationToken);
         _selectedTheme = settings.Theme;
         _selectedLanguage = settings.Language;
+        _customThemePalette = settings.CustomThemePalette;
+        if (_customThemePalette is not null && !IsValidPalette(_customThemePalette))
+        {
+            Log.Warning("The saved custom theme palette contains an invalid color and was ignored.");
+            _customThemePalette = null;
+        }
+
+        var savedTelemetrySettings = settings.Telemetry ?? new TelemetrySettings();
+        _telemetrySettings = savedTelemetrySettings with
+        {
+            Endpoint = savedTelemetrySettings.Endpoint ?? string.Empty,
+            InstallationId = string.IsNullOrWhiteSpace(savedTelemetrySettings.InstallationId)
+                ? Guid.NewGuid().ToString("N")
+                : savedTelemetrySettings.InstallationId
+        };
+
+        _telemetryCrashReportsEnabled = _telemetrySettings.CrashReports;
+        _telemetryUsageEnabled = _telemetrySettings.UsageStatistics;
+        _telemetryPerformanceEnabled = _telemetrySettings.Performance;
+        _telemetryEndpoint = _telemetrySettings.Endpoint;
+        LoadPaletteDraft(_customThemePalette);
         _runAtStartup = await _startupTaskService.IsEnabledAsync(cancellationToken);
         _startMinimized = settings.StartMinimized;
         _closeToTray = settings.CloseToTray;
@@ -1397,17 +1844,46 @@ public partial class MainViewModel : ObservableObject, IDisposable
             AchievementsStatusText = LocalizationManager.Instance["Achievements.KeyUnreadable"];
         }
         _themeService.Apply(_selectedTheme);
+        if (_customThemePalette is not null)
+        {
+            ThemeService.ApplyCustomPalette(_customThemePalette);
+            HasLowContrast = ThemeService.GetTextContrastRatio(_customThemePalette) < 4.5;
+        }
         LocalizationManager.Instance.SetCulture(_selectedLanguage);
         if (string.IsNullOrWhiteSpace(SteamApiKey) && string.IsNullOrWhiteSpace(AchievementsStatusText))
         {
             AchievementsStatusText = LocalizationManager.Instance["Achievements.KeyRequired"];
         }
         OnPropertyChanged(nameof(SelectedTheme));
+        OnPropertyChanged(nameof(CustomAccentColor));
+        OnPropertyChanged(nameof(CustomAccentHex));
+        OnPropertyChanged(nameof(CustomAccentSecondaryHex));
+        OnPropertyChanged(nameof(CustomBackgroundHex));
+        OnPropertyChanged(nameof(CustomSurfaceHex));
+        OnPropertyChanged(nameof(CustomTextHex));
         OnPropertyChanged(nameof(SelectedLanguage));
         OnPropertyChanged(nameof(SelectedMusicService));
         OnPropertyChanged(nameof(RunAtStartup));
         OnPropertyChanged(nameof(StartMinimized));
         OnPropertyChanged(nameof(CloseToTray));
+        OnPropertyChanged(nameof(TelemetryCrashReportsEnabled));
+        OnPropertyChanged(nameof(TelemetryUsageEnabled));
+        OnPropertyChanged(nameof(TelemetryPerformanceEnabled));
+        OnPropertyChanged(nameof(TelemetryEndpoint));
+        OnPropertyChanged(nameof(TelemetryInstallationId));
+        await _telemetryService.PurgeDisabledCategoriesAsync(
+            CurrentTelemetrySettings,
+            cancellationToken);
+        await RefreshTelemetryEventsAsync(cancellationToken);
+        if (TelemetryUsageEnabled)
+        {
+            await _telemetryService.RecordAsync(
+                "usage.application_started",
+                new { version = CurrentAppVersion },
+                CurrentTelemetrySettings,
+                cancellationToken);
+        }
+
         await RefreshGamesAsync(cancellationToken);
     }
 
@@ -2196,6 +2672,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _mediaSessionTimer.Dispose();
         _audioMeterTimer.Dispose();
         _systemMetricsTimer.Dispose();
+        _systemMetricsService.Dispose();
         NetworkChange.NetworkAvailabilityChanged -= NetworkAvailabilityChanged;
         LocalizationManager.Instance.PropertyChanged -= LocalizationChanged;
         _audioDeviceNotificationService.DevicesChanged -= AudioDevicesChanged;
@@ -2268,19 +2745,75 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             var snapshot = _systemMetricsService.Read();
+            var now = DateTimeOffset.UtcNow;
+            if (TelemetryPerformanceEnabled
+                && now - _lastPerformanceTelemetryUtc >= TimeSpan.FromMinutes(1))
+            {
+                _lastPerformanceTelemetryUtc = now;
+                _ = RecordPerformanceTelemetryAsync(snapshot, CurrentTelemetrySettings);
+            }
+
             _synchronizationContext?.Post(
                 static state =>
                 {
                     var (viewModel, metrics) = ((MainViewModel, SystemMetricsSnapshot))state!;
                     viewModel._cpuUsagePercent = metrics.CpuUsagePercent;
                     viewModel._memoryUsagePercent = metrics.MemoryUsagePercent;
+                    viewModel._gpuUsagePercent = metrics.GpuUsagePercent;
+                    viewModel._memoryUsedBytes = metrics.MemoryUsedBytes;
+                    viewModel._memoryAvailableBytes = metrics.MemoryAvailableBytes;
+                    viewModel._memoryTotalBytes = metrics.MemoryTotalBytes;
+                    viewModel._gpuDedicatedMemoryBytes = metrics.GpuDedicatedMemoryBytes;
+                    viewModel._systemCoreMetrics = metrics.CpuCoreUsages
+                        .Select((usage, index) => new SystemCoreMetricEntry(index + 1, usage))
+                        .ToArray();
+                    viewModel.SystemMetricsHistory.Add(new SystemMetricsHistoryEntry(
+                        DateTimeOffset.Now,
+                        metrics.CpuUsagePercent,
+                        metrics.MemoryUsagePercent,
+                        metrics.GpuUsagePercent));
+                    while (viewModel.SystemMetricsHistory.Count > 60)
+                    {
+                        viewModel.SystemMetricsHistory.RemoveAt(0);
+                    }
+
+                    viewModel.OnPropertyChanged(nameof(SystemCoreMetrics));
                     viewModel.OnPropertyChanged(nameof(SystemMetricsText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsCpuText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsGpuText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsUsedMemoryText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsAvailableMemoryText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsTotalMemoryText));
+                    viewModel.OnPropertyChanged(nameof(SystemMetricsGpuMemoryText));
                 },
                 (this, snapshot));
         }
         catch (Win32Exception exception)
         {
             Log.Warning(exception, "Could not read Windows system performance metrics.");
+        }
+    }
+
+    private async Task RecordPerformanceTelemetryAsync(
+        SystemMetricsSnapshot snapshot,
+        TelemetrySettings settings)
+    {
+        try
+        {
+            await _telemetryService.RecordAsync(
+                "performance.system_metrics",
+                new
+                {
+                    cpuPercent = snapshot.CpuUsagePercent,
+                    memoryPercent = snapshot.MemoryUsagePercent,
+                    gpuPercent = snapshot.GpuUsagePercent
+                },
+                settings,
+                CancellationToken.None);
+        }
+        catch (Exception exception) when (exception is IOException or SqliteException)
+        {
+            Log.Warning(exception, "Could not queue an anonymous performance event.");
         }
     }
 
@@ -2396,6 +2929,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         ClockText = DateTime.Now.ToString("HH:mm", CultureInfo.CurrentCulture);
         OnPropertyChanged(nameof(ClockText));
+    }
+
+    private static string FormatMemory(ulong bytes)
+    {
+        var gibibytes = bytes / 1024d / 1024d / 1024d;
+        return $"{gibibytes:0.0} GB";
     }
 
     private void LocalizationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -2554,6 +3093,87 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 _failedGameProviders);
     }
 
+    private TelemetrySettings CurrentTelemetrySettings => _telemetrySettings with
+    {
+        CrashReports = TelemetryCrashReportsEnabled,
+        UsageStatistics = TelemetryUsageEnabled,
+        Performance = TelemetryPerformanceEnabled,
+        Endpoint = TelemetryEndpoint.Trim()
+    };
+
+    private void LoadPaletteDraft(ThemePalette? palette)
+    {
+        var draft = palette ?? new ThemePalette(
+            "#00D2FF",
+            "#3A86FF",
+            "#12141D",
+            "#1E202D",
+            "#F2F5FA");
+        _customAccentHex = draft.Accent;
+        _customAccentSecondaryHex = draft.AccentSecondary;
+        _customBackgroundHex = draft.Background;
+        _customSurfaceHex = draft.Surface;
+        _customTextHex = draft.Text;
+        if (ThemeService.TryParseHexColor(draft.Accent, out var accent))
+        {
+            _customAccentColor = accent;
+        }
+
+        OnPropertyChanged(nameof(CustomAccentColor));
+        OnPropertyChanged(nameof(CustomAccentHex));
+        OnPropertyChanged(nameof(CustomAccentSecondaryHex));
+        OnPropertyChanged(nameof(CustomBackgroundHex));
+        OnPropertyChanged(nameof(CustomSurfaceHex));
+        OnPropertyChanged(nameof(CustomTextHex));
+    }
+
+    private void UpdateDraftPalette()
+    {
+        if (!TryCreatePalette(out var palette))
+        {
+            IsCustomPaletteValid = false;
+            CustomPaletteStatusText = LocalizationManager.Instance["Settings.Palette.Invalid"];
+            return;
+        }
+
+        IsCustomPaletteValid = true;
+        _customThemePalette = palette;
+        ThemeService.ApplyCustomPalette(palette);
+        HasLowContrast = ThemeService.GetTextContrastRatio(palette) < 4.5;
+        CustomPaletteStatusText = LocalizationManager.Instance[
+            HasLowContrast ? "Settings.Palette.ContrastWarning" : "Settings.Palette.Preview"];
+    }
+
+    private bool TryCreatePalette(out ThemePalette palette)
+    {
+        palette = new ThemePalette(
+            CustomAccentHex,
+            CustomAccentSecondaryHex,
+            CustomBackgroundHex,
+            CustomSurfaceHex,
+            CustomTextHex);
+        return IsValidPalette(palette);
+    }
+
+    private static bool IsValidPalette(ThemePalette palette) =>
+        ThemeService.TryParseHexColor(palette.Accent, out _)
+        && ThemeService.TryParseHexColor(palette.AccentSecondary, out _)
+        && ThemeService.TryParseHexColor(palette.Background, out _)
+        && ThemeService.TryParseHexColor(palette.Surface, out _)
+        && ThemeService.TryParseHexColor(palette.Text, out _);
+
+    private async Task RefreshTelemetryEventsAsync(CancellationToken cancellationToken)
+    {
+        var events = await _telemetryService.GetRecentEventsAsync(cancellationToken);
+        TelemetryEvents.Clear();
+        foreach (var telemetryEvent in events)
+        {
+            TelemetryEvents.Add(telemetryEvent);
+        }
+
+        OnPropertyChanged(nameof(HasTelemetryEvents));
+    }
+
     private AppSettings CurrentSettings => new(
         SelectedTheme,
         SelectedLanguage,
@@ -2564,6 +3184,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Shortcuts: Shortcuts.ToArray(),
         AudioProfiles: AudioProfiles.ToArray(),
         ManualGames: _manualGames.ToArray(),
+        CustomThemePalette: _customThemePalette,
+        Telemetry: CurrentTelemetrySettings,
         HomeTiles: HomeTiles
             .Select(tile => new HomeTileLayoutEntry(
                 tile.LayoutId,

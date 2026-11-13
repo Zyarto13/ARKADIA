@@ -8,7 +8,7 @@ namespace Arkadia.Infrastructure.Storage;
 
 public sealed class ArkadiaDatabase : IAppDatabase
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
     private readonly string _connectionString;
     private readonly string _databasePath;
 
@@ -71,6 +71,28 @@ public sealed class ArkadiaDatabase : IAppDatabase
         {
             throw new InvalidDataException(
                 $"Database schema version {currentVersion} is newer than supported version {CurrentSchemaVersion}.");
+        }
+        else if (currentVersion == 1)
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                """
+                CREATE TABLE telemetry_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_utc TEXT NOT NULL,
+                    sent_utc TEXT NOT NULL,
+                    event TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                );
+                INSERT INTO schema_version(version, applied_utc)
+                VALUES (@Version, @AppliedUtc);
+                """,
+                new
+                {
+                    Version = CurrentSchemaVersion,
+                    AppliedUtc = DateTimeOffset.UtcNow.ToString("O")
+                },
+                transaction,
+                cancellationToken: cancellationToken));
         }
         else if (currentVersion < CurrentSchemaVersion)
         {
@@ -338,6 +360,13 @@ public sealed class ArkadiaDatabase : IAppDatabase
         CREATE TABLE telemetry_queue (
             id INTEGER PRIMARY KEY,
             created_utc TEXT NOT NULL,
+            event TEXT NOT NULL,
+            payload_json TEXT NOT NULL
+        );
+        CREATE TABLE telemetry_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_utc TEXT NOT NULL,
+            sent_utc TEXT NOT NULL,
             event TEXT NOT NULL,
             payload_json TEXT NOT NULL
         );

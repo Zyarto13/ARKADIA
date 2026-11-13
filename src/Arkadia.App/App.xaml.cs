@@ -1,16 +1,17 @@
 using System.IO;
 using System.Globalization;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Windows;
 using Arkadia.App.Services;
 using Arkadia.App.ViewModels;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Arkadia.Infrastructure.Storage;
 using Arkadia.Infrastructure.Providers;
-using Microsoft.Data.Sqlite;
 
 namespace Arkadia.App;
 
@@ -23,6 +24,47 @@ public partial class App : System.Windows.Application, IDisposable
     private EventWaitHandle? _activationEvent;
     private readonly CancellationTokenSource _activationCancellation = new();
     private Task? _activationListener;
+
+    private void Application_DispatcherUnhandledException(
+        object sender,
+        System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        var exceptionType = e.Exception.GetType().FullName ?? e.Exception.GetType().Name;
+        Log.Fatal("An unhandled UI exception occurred: {ExceptionType}.", exceptionType);
+        if (_host is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = _host.Services
+                .GetRequiredService<Core.Services.ISettingsService>()
+                .LoadAsync(CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+            if (settings.Telemetry is { CrashReports: true } telemetry)
+            {
+                _host.Services
+                    .GetRequiredService<TelemetryService>()
+                    .RecordAsync(
+                        "crash.unhandled_exception",
+                        new { exceptionType },
+                        telemetry,
+                        CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidDataException
+                or InvalidOperationException or JsonException or SqliteException)
+        {
+            Log.Warning(
+                "Could not queue an anonymous crash event ({FailureType}).",
+                exception.GetType().FullName);
+        }
+    }
 
     private async void Application_Startup(object sender, StartupEventArgs e)
     {
@@ -72,6 +114,9 @@ public partial class App : System.Windows.Application, IDisposable
                 services.AddSingleton<ArkadiaDatabase>();
                 services.AddSingleton<Core.Services.IAppDatabase>(provider =>
                     provider.GetRequiredService<ArkadiaDatabase>());
+                services.AddSingleton<DataManagementService>();
+                services.AddSingleton(provider => new TelemetryService(
+                    provider.GetRequiredService<ArkadiaDatabase>()));
                 services.AddSingleton<Core.Services.IStartupTaskService, StartupTaskService>();
                 services.AddSingleton<Core.Providers.IGameProvider>(serviceProvider =>
                     new SteamGameProvider(

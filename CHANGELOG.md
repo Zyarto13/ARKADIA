@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.21
+
+- Added editable custom color palettes with a color wheel, contrast warnings, and JSON import/export.
+- Added opt-in crash, usage, and performance events that stay local until explicitly sent to a configured HTTPS endpoint.
+- Added telemetry consent controls, event history, clearing, and anonymous installation ID reset.
+- Added personal-data ZIP export and confirmed deletion of local ARKADIA data.
+- Added CPU-core, GPU 3D usage, dedicated GPU memory, and a live 60-second system metrics view.
+
 ## 1.0.20
 
 - Made the home dashboard and game library adapt to narrower window widths without forcing overflowing columns.
