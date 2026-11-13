@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.22
+
+- Fixed a startup crash caused by a malformed hexadecimal brush color in the home-tile template.
+
 ## 1.0.21
 
 - Added editable custom color palettes with a color wheel, contrast warnings, and JSON import/export.

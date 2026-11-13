@@ -694,7 +694,7 @@
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="#241FFFFFFF"
+                                                                <Border Background="#24FFFFFF"
                                                                         BorderBrush="#24FFFFFF"
                                                                         BorderThickness="1"
                                                                         CornerRadius="8"
